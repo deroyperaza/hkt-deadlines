@@ -1,0 +1,2380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hyperakt Deadlines</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@400;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<style>
+  /* ── LOGIN OVERLAY ───────────────────────────────── */
+  #login-overlay {
+    display: flex;
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: #0f0450;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 24px;
+  }
+  #login-overlay svg { color: #ff4d00; height: 52px; width: 52px; }
+  .login-title {
+    font-family: 'Barlow Semi Condensed', Arial Narrow, Arial, sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: #fffcf1;
+  }
+  .login-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #ff4d00;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    padding: 12px 24px;
+    font-family: 'Barlow', Arial, sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: 0.02em;
+    transition: opacity 0.15s;
+  }
+  .login-btn:hover { opacity: 0.88; }
+  .login-note {
+    font-family: 'Barlow', Arial, sans-serif;
+    font-size: 12px;
+    color: rgba(255,252,241,0.4);
+    letter-spacing: 0.02em;
+  }
+  #loading-bar {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #ff4d00 0%, #ffb799 100%);
+    z-index: 9998;
+    animation: loadpulse 1.2s ease-in-out infinite;
+  }
+  @keyframes loadpulse { 0%,100% { opacity:1 } 50% { opacity:0.4 } }
+  :root {
+    --hotsauce:   #ff4d00;
+    --hubble:     #0f0450;
+    --horchata:   #fffcf1;
+    --hype:       #ffb799;
+    --hatTrick:   #b9adfb;
+    --honey:      #ffd549;
+    --havana:     #7cddf2;
+    --hint:       #ddfc79;
+    --ube:        #8b77f8;
+    --border:     rgba(15,4,80,0.12);
+    --border-mid: rgba(15,4,80,0.22);
+    --surface:    rgba(15,4,80,0.05);
+    --surface2:   rgba(15,4,80,0.09);
+    --text-muted: rgba(15,4,80,0.5);
+    --font-display: 'Barlow Semi Condensed', 'Arial Narrow', Arial, sans-serif;
+    --font-body:    'Barlow', 'Helvetica Neue', Arial, sans-serif;
+    --radius:     4px;
+    --radius-lg:  8px;
+    --radius-pill:100px;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { color-scheme: light; background: #fffcf1; }
+  body {
+    font-family: var(--font-body);
+    background: #fffcf1;
+    color: #0f0450;
+    min-height: 100vh;
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── NAV ──────────────────────────────── */
+  .site-nav {
+    background: #0f0450;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    border-bottom: 2px solid #ff4d00;
+  }
+  .nav-row1 {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 0 20px;
+    height: 56px;
+    flex-wrap: nowrap;
+  }
+  .nav-left {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    flex-shrink: 1;
+    min-width: 0;
+    overflow: hidden;
+  }
+  .nav-logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 16px 0 0;
+    flex-shrink: 0;
+  }
+  .nav-logo svg {
+    height: 43px;
+    width: 43px;
+    display: block;
+    color: #ff4d00;
+    flex-shrink: 0;
+  }
+  .nav-separator {
+    width: 1px;
+    height: 28px;
+    background: rgba(255,252,241,0.15);
+    flex-shrink: 0;
+    margin-right: 16px;
+  }
+  .nav-separator {
+    width: 1px;
+    height: 28px;
+    background: rgba(255,252,241,0.15);
+    flex-shrink: 0;
+    margin-right: 20px;
+  }
+  .nav-title {
+    font-family: var(--font-display);
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: rgba(255,252,241,0.85);
+    text-transform: uppercase;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-right: 20px;
+  }
+  .nav-meta {
+    font-family: var(--font-body);
+    font-size: 12px;
+    color: rgba(255,252,241,0.65);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .nav-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+  .view-toggle {
+    display: flex;
+    border: 1px solid rgba(255,252,241,0.2);
+    border-radius: var(--radius-pill);
+    overflow: hidden;
+  }
+  .view-btn {
+    background: transparent;
+    border: none;
+    color: rgba(255,252,241,0.45);
+    font-family: var(--font-body);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 5px 14px;
+    cursor: pointer;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    transition: all 0.15s;
+    border-right: 1px solid rgba(255,252,241,0.2);
+  }
+  .view-btn:last-child { border-right: none; }
+  .view-btn.active { background: var(--hotsauce); color: var(--horchata); }
+  .view-btn:not(.active):hover { color: var(--horchata); }
+
+  /* Controls row */
+  .cream-bar {
+    background: #fffcf1;
+    border-bottom: 1px solid rgba(15,4,80,0.12);
+    position: sticky;
+    top: 56px;
+    z-index: 99;
+  }
+  .cream-controls {
+    display: flex;
+    gap: 8px;
+    padding: 10px 20px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .cream-divider {
+    height: 1px;
+    background: rgba(15,4,80,0.12);
+    margin: 0 20px;
+  }
+  .search-wrap { position: relative; flex: 0 1 220px; min-width: 140px; }
+  .search-icon {
+    position: absolute;
+    left: 12px; top: 50%;
+    transform: translateY(-50%);
+    color: rgba(255,252,241,0.3);
+    font-size: 12px;
+    pointer-events: none;
+  }
+  input[type="text"], select {
+    background: #ffffff;
+    border: 1px solid rgba(15,4,80,0.22);
+    border-radius: var(--radius);
+    color: #0f0450;
+    font-family: var(--font-body);
+    font-size: 13px;
+    padding: 7px 12px;
+    outline: none;
+    transition: border-color 0.15s;
+    width: 100%;
+  }
+  .search-wrap input { padding-left: 32px; }
+  .search-icon { color: rgba(15,4,80,0.4); }
+  input[type="text"]::placeholder { color: rgba(15,4,80,0.4); }
+  input[type="text"]:focus, select:focus { border-color: #ff4d00; }
+  select { flex: 0 1 160px; min-width: 120px; cursor: pointer; }
+  select option { background: #ffffff; color: #0f0450; }
+  .clear-btn {
+    background: transparent;
+    border: 1px solid var(--border-mid);
+    border-radius: var(--radius-pill);
+    color: var(--text-muted);
+    font-family: var(--font-body);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 7px 16px;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .clear-btn:hover { border-color: var(--hotsauce); color: var(--hotsauce); }
+
+  .nav-count {
+    font-family: var(--font-body);
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--text-muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .nav-count .result-count { color: var(--hotsauce); font-weight: 600; }
+
+  /* ── RESULT BAR removed — count moved into nav ── */
+
+  /* ── SHARED BADGES ─────────────────────── */
+  .led-creative { background: #c8f4ff; color: #07364a; }
+  .led-strategy { background: #e5fb9e; color: #283800; }
+  .led-content  { background: #fff0a0; color: #3d2b00; }
+  .led-account  { background: #ffe2d0; color: #4a1a00; }
+  .led-client   { background: #e8e4ff; color: #1a0857; }
+  .led-pm       { background: #d0f0e0; color: #063d22; }
+
+  .led-badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    padding: 2px 7px;
+    border-radius: var(--radius-pill);
+    white-space: nowrap;
+    font-family: var(--font-body);
+    line-height: 1.6;
+  }
+
+  /* ── LIST VIEW ─────────────────────────── */
+  #main-content.list-mode { padding: 0 20px 80px; }
+
+  .month-section { margin-top: 32px; }
+  .month-header {
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 5vw, 3.25rem);
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: var(--hubble);
+    line-height: 1;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+  }
+  .month-count {
+    font-family: var(--font-body);
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--text-muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .month-count .result-count { color: var(--hotsauce); font-weight: 600; }
+
+  .table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin-top: 12px;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+    background: #fff;
+  }
+  table { width: 100%; border-collapse: collapse; min-width: 560px; table-layout: fixed; }
+  thead th:nth-child(1), tbody td:nth-child(1) { width: 68px; }
+  thead th:nth-child(2), tbody td:nth-child(2) { width: 148px; }
+  thead th:nth-child(3), tbody td:nth-child(3) { /* auto */ }
+  thead th:nth-child(4), tbody td:nth-child(4) { width: 155px; }
+  thead th:nth-child(5), tbody td:nth-child(5) { width: 56px; text-align: center; position: sticky; right: 0; }
+  thead th:nth-child(5) { background: var(--hubble); }
+  tbody td:nth-child(5) { background: #fff; }
+  tbody tr:hover td:nth-child(5) { background: var(--surface); }
+  thead th {
+    background: var(--hubble);
+    color: rgba(255,252,241,0.6);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 9px 16px;
+    text-align: left;
+    white-space: nowrap;
+    font-family: var(--font-body);
+  }
+  tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr.tr-week-end td { border-bottom: 1px solid rgba(15,4,80,0.38); }
+  tbody tr.tr-week-end td:nth-child(5) { border-bottom: 1px solid rgba(15,4,80,0.38); background: #fff; }
+  tbody tr:hover { background: var(--surface); }
+  tbody td { padding: 10px 16px; vertical-align: top; }
+
+  .td-date { white-space: nowrap; color: #4a5a9a; font-size: 18px; font-weight: 400; min-width: 48px; font-family: var(--font-display); line-height: 1; vertical-align: middle; border-right: 1px solid var(--border); text-align: center; }
+  .td-date-inner { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .td-date-dow { font-size: 8px; font-weight: 600; letter-spacing: 0.1em; color: #4a5a9a; opacity: 0.55; font-family: var(--font-body); line-height: 1; }
+  .td-project { min-width: 110px; }
+  .project-tag {
+    display: inline-block;
+    background: var(--hubble);
+    color: var(--horchata);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    padding: 3px 9px;
+    border-radius: var(--radius-pill);
+    white-space: nowrap;
+    font-family: var(--font-body);
+  }
+  .td-milestone { color: var(--hubble); line-height: 1.5; font-size: 13px; }
+  .star-flag {
+    display: inline-block;
+    width: 6px; height: 6px;
+    background: var(--hotsauce);
+    border-radius: 50%;
+    margin-right: 5px;
+    vertical-align: middle;
+    position: relative; top: -1px;
+    flex-shrink: 0;
+  }
+  .note-tag { font-size: 11px; color: var(--text-muted); font-style: italic; }
+  .td-led { min-width: 120px; }
+  .td-led-inner { display: flex; flex-wrap: wrap; gap: 4px; align-items: flex-start; }
+  .td-deadline-overdue { color: var(--hotsauce) !important; }
+  .td-complete { text-align: center; vertical-align: middle !important; }
+  .td-complete input[type="checkbox"] { width: 15px; height: 15px; cursor: pointer; accent-color: var(--hubble); }
+  .tr-completed-show { opacity: 0.38; }
+  tbody tr { transition: opacity 0.28s; }
+  .cal-detail-led { display: flex; flex-wrap: wrap; gap: 4px; }
+
+  .empty-state { text-align: center; padding: 80px 24px; color: var(--text-muted); }
+  .empty-state-title {
+    font-family: var(--font-display);
+    font-size: 1.75rem;
+    font-weight: 600;
+    color: var(--hubble);
+    margin-bottom: 8px;
+  }
+
+  /* ── LOG VIEW ───────────────────────────── */
+  #main-content.notes-mode { padding: 32px 20px 80px; }
+  .notes-view-inner { max-width: 760px; margin: 0 auto; }
+  .notes-view-heading {
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 5vw, 3.25rem);
+    font-weight: 700;
+    /* Log date group styles */
+    letter-spacing: -0.01em;
+    color: var(--hubble);
+    line-height: 1;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 20px;
+  }
+
+  /* ── LOG DATE GROUPS ─────────────────────── */
+  .log-date-group { margin-bottom: 32px; }
+  .log-date-heading {
+    font-family: var(--font-display);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--hotsauce);
+    padding: 6px 0;
+    border-bottom: 2px solid var(--hotsauce);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .log-date-heading::before {
+    content: '';
+    display: inline-block;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--hotsauce);
+    flex-shrink: 0;
+  }
+  .log-new-badge {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    background: var(--hotsauce);
+    color: #fff;
+    padding: 1px 6px;
+    border-radius: 100px;
+    margin-left: auto;
+  }
+  .log-update-item {
+    display: grid;
+    grid-template-columns: 140px 1fr;
+    gap: 12px;
+    padding: 12px 14px;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    margin-bottom: 8px;
+    font-size: 13px;
+    line-height: 1.55;
+  }
+  .log-update-item.flag-item { border-left: 3px solid var(--hotsauce); }
+  .log-update-client { font-weight: 700; color: var(--hubble); padding-top: 1px; }
+  .log-update-body { color: rgba(15,4,80,0.65); }
+  .log-update-body strong { color: var(--hubble); font-weight: 600; }
+  .standing-notes-heading {
+    font-family: var(--font-display);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(15,4,80,0.4);
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border);
+    margin: 28px 0 10px;
+  }
+  @media (max-width: 580px) {
+    .log-update-item { grid-template-columns: 1fr; gap: 4px; }
+    .log-update-client { font-size: 12px; }
+  }
+
+  /* ── LOG CARDS (shared across views) ───── */
+  .notes-list { display: grid; gap: 10px; }
+  .note-item {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 16px;
+    font-size: 13px;
+    line-height: 1.6;
+    padding: 14px 16px;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+  }
+  .note-client { font-weight: 600; color: var(--hubble); white-space: nowrap; padding-top: 1px; }
+  .note-body { color: var(--text-muted); }
+
+  /* Log section appended at bottom of list/cal views */
+  .notes-section {
+    margin: 48px 0 0;
+    border-top: 1px solid var(--border);
+    padding-top: 28px;
+  }
+  .notes-eyebrow {
+    font-family: var(--font-body);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--hotsauce);
+    margin-bottom: 16px;
+    display: block;
+  }
+
+  /* ── CALENDAR VIEW ─────────────────────── */
+  #main-content.cal-mode { padding: 0; }
+  .cal-outer { padding: 32px 36px 80px; }
+
+  /* Nav */
+  .cal-nav { display: flex; align-items: center; gap: 16px; margin-bottom: 12px; }
+  .cal-nav-btn {
+    background: #fff;
+    border: 1px solid var(--border-mid);
+    border-radius: var(--radius);
+    color: var(--hubble);
+    font-size: 14px;
+    width: 32px; height: 32px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+    flex-shrink: 0;
+  }
+  .cal-nav-btn:hover:not(:disabled) { background: var(--hubble); color: var(--horchata); }
+  .cal-nav-btn:disabled { opacity: 0.25; cursor: default; }
+  .cal-month-label { display: flex; align-items: baseline; gap: 10px; flex: 1; }
+  .cal-month-name {
+    font-family: var(--font-display);
+    font-size: clamp(1.75rem, 4vw, 2.75rem);
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: var(--hubble);
+    line-height: 1;
+  }
+  .cal-month-year { font-size: 13px; color: var(--text-muted); font-family: var(--font-body); }
+  .cal-month-count {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--hotsauce);
+    font-family: var(--font-body);
+  }
+
+  /* Month pill strip */
+  .cal-month-strip { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 16px; }
+  .cal-month-pill {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 5px 12px;
+    border-radius: var(--radius-pill);
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: #fff;
+    color: var(--text-muted);
+    transition: all 0.12s;
+    font-family: var(--font-body);
+  }
+  .cal-month-pill:hover { border-color: var(--hubble); color: var(--hubble); }
+  .cal-month-pill.has-data { color: var(--hubble); }
+  .cal-month-pill.active { background: var(--hubble); color: var(--horchata); border-color: var(--hubble); }
+
+  /* Grid */
+  .cal-grid-wrap {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    background: #fff;
+  }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); }
+  .cal-day-header {
+    background: var(--hubble);
+    color: rgba(255,252,241,0.5);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 8px;
+    text-align: center;
+    font-family: var(--font-body);
+  }
+  .cal-cell {
+    min-height: 115px;
+    border-right: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    padding: 6px 7px;
+    background: #fff;
+    transition: background 0.1s;
+    overflow: hidden;
+  }
+  .cal-cell:nth-child(7n) { border-right: none; }
+  .cal-cell.empty-cell { background: var(--surface); }
+  .cal-cell.has-events { cursor: pointer; }
+  .cal-cell.has-events:hover { background: rgba(255,77,0,0.04); }
+  .cal-cell.today-cell { background: rgba(255,77,0,0.06); }
+  .cal-cell.selected-cell {
+    background: rgba(255,77,0,0.1);
+    box-shadow: inset 0 0 0 2px var(--hotsauce);
+  }
+
+  .cal-day-num {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-align: right;
+    line-height: 1;
+    margin-bottom: 4px;
+    font-family: var(--font-body);
+    font-weight: 400;
+  }
+  .today-bubble {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px; height: 20px;
+    background: var(--hotsauce);
+    color: #fff;
+    border-radius: 50%;
+    font-size: 10px;
+    font-weight: 600;
+  }
+
+  /* Chips (desktop) */
+  .cal-chip {
+    display: block;
+    font-size: 11px;
+    font-weight: 500;
+    font-family: var(--font-body);
+    padding: 2px 6px;
+    border-radius: var(--radius);
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.45;
+    max-width: 100%;
+  }
+  .cal-chip.approx { opacity: 0.65; border-left: 2px dashed; padding-left: 4px; }
+  .cal-chip.cal-chip-done { opacity: 0.3; text-decoration: line-through; }
+  .cal-chip-star {
+    display: inline-block;
+    width: 4px; height: 4px;
+    background: var(--hotsauce);
+    border-radius: 50%;
+    margin-right: 3px;
+    vertical-align: middle;
+    position: relative; top: -1px;
+  }
+  .cal-overflow {
+    font-size: 11px;
+    color: var(--hotsauce);
+    font-weight: 600;
+    padding: 1px 6px;
+    letter-spacing: 0.02em;
+    font-family: var(--font-body);
+  }
+
+  /* Small cal labels (mobile) — project name chips, not just dots */
+  .cal-dots { display: none; flex-direction: column; gap: 2px; padding-top: 2px; }
+  .cal-mini-chip {
+    display: block;
+    font-size: 9px;
+    font-weight: 600;
+    font-family: var(--font-body);
+    padding: 1px 4px;
+    border-radius: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.5;
+    max-width: 100%;
+  }
+  .cal-mini-overflow {
+    font-size: 9px;
+    color: var(--hotsauce);
+    font-weight: 600;
+    padding: 0 4px;
+    font-family: var(--font-body);
+  }
+
+  /* Day detail drawer */
+  .cal-detail {
+    margin-top: 16px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    background: #fff;
+    display: none;
+    animation: fadeDown 0.18s ease-out;
+  }
+  .cal-detail.visible { display: block; }
+  @keyframes fadeDown {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: none; }
+  }
+  .cal-detail-header {
+    background: var(--hubble);
+    color: var(--horchata);
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-family: var(--font-body);
+  }
+  .cal-detail-date {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 1rem;
+    letter-spacing: 0.01em;
+  }
+  .cal-detail-count { font-size: 11px; color: rgba(255,252,241,0.4); }
+  .cal-detail-close {
+    margin-left: auto;
+    background: none;
+    border: none;
+    color: rgba(255,252,241,0.4);
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 1;
+    transition: color 0.12s;
+    padding: 0 2px;
+  }
+  .cal-detail-close:hover { color: var(--horchata); }
+  .cal-detail-row {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 12px 16px;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    align-items: start;
+    font-size: 13px;
+    transition: background 0.1s;
+    font-family: var(--font-body);
+  }
+  .cal-detail-row:last-child { border-bottom: none; }
+  .cal-detail-row:hover { background: var(--surface); }
+  .cal-detail-ms { line-height: 1.5; color: var(--hubble); }
+  .cal-detail-note { font-size: 11px; color: var(--text-muted); font-style: italic; }
+  .cal-detail-approx { font-size: 11px; color: var(--text-muted); }
+
+  /* ── TEAM PILLS ─────────────────────────── */
+  .team-pills-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+    padding: 10px 20px;
+    background: #fffcf1;
+  }
+  .team-pill {
+    border: none;
+    border-radius: var(--radius-pill);
+    font-family: var(--font-body);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    padding: 3px 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+    opacity: 1;
+    text-transform: none;
+    line-height: 1.6;
+  }
+  .team-pill:hover { filter: brightness(0.93); }
+  .team-pill.active { box-shadow: 0 0 0 2.5px rgba(0,0,0,0.28); }
+  .team-pill.all-pill {
+    background: var(--hubble);
+    color: var(--horchata);
+  }
+  .team-pill.all-pill:hover { filter: brightness(1.2); }
+  .team-pill.led-creative { background: #c8f4ff; color: #07364a; }
+  .team-pill.led-strategy { background: #e5fb9e; color: #283800; }
+  .team-pill.led-content  { background: #fff0a0; color: #3d2b00; }
+  .team-pill.led-account  { background: #ffe2d0; color: #4a1a00; }
+  .team-pill.led-client   { background: #e8e4ff; color: #1a0857; }
+  .team-pill.led-pm       { background: #d0f0e0; color: #063d22; }
+
+
+
+  /* ── MONTH NAV BAR ──────────────────────── */
+  .month-nav-bar {
+    background: #fffcf1;
+    border-bottom: 1px solid rgba(15,4,80,0.12);
+    position: sticky;
+    top: 0; /* overridden by JS after layout */
+    z-index: 98;
+    display: flex;
+    align-items: stretch;
+    overflow: hidden;
+    scrollbar-width: none;
+  }
+  .month-nav-bar::-webkit-scrollbar { display: none; }
+  .month-nav-inner {
+    display: flex;
+    flex: 1;
+    gap: 0;
+    padding: 0 20px;
+    min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .month-nav-inner::-webkit-scrollbar { display: none; }
+  .show-all-btn {
+    flex-shrink: 0;
+    background: transparent;
+    border: none;
+    border-left: 1px solid rgba(15,4,80,0.12);
+    font-family: var(--font-body);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    padding: 9px 16px;
+    cursor: pointer;
+    transition: color 0.15s;
+    white-space: nowrap;
+  }
+  .show-all-btn:hover { color: var(--hubble); }
+  .show-all-btn.active { color: var(--hotsauce); }
+  .month-nav-btn {
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    padding: 9px 14px;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+    white-space: nowrap;
+    margin-bottom: -1px;
+  }
+  .month-nav-btn:hover { color: var(--hubble); border-color: var(--border-mid); }
+  .month-nav-btn.active { color: var(--hotsauce); border-color: var(--hotsauce); }
+
+  /* ── CALENDAR SCROLL VIEW ───────────────── */
+  #main-content.cal-scroll-mode { padding: 0; }
+  .cal-scroll-outer { padding: 0 20px 80px; }
+  .cal-month-block { margin-top: 48px; }
+  .cal-month-block:first-child { margin-top: 32px; }
+
+  .cal-month-heading {
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 5vw, 3.25rem);
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: var(--hubble);
+    line-height: 1;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .cal-month-heading-count {
+    font-family: var(--font-body);
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--text-muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .cal-month-heading-count .result-count { color: var(--hotsauce); font-weight: 600; }
+
+  @media (max-width: 700px) {
+    .nav-row1 { padding: 0 16px; }
+    .cream-controls { padding: 10px 16px; }
+    .cream-divider { margin: 0 16px; }
+    .team-pills-row { padding: 10px 16px; }
+    .month-nav-inner { padding: 0 16px; }
+    #main-content.list-mode { padding: 0 16px 60px; }
+    .cal-scroll-outer { padding: 0 16px 60px; }
+    .nav-meta { display: none; }
+    thead th, tbody td { padding: 8px 12px; }
+    .cal-detail-row { grid-template-columns: auto 1fr; }
+    .cal-detail-row .led-badge { display: none; }
+  }
+  @media (max-width: 580px) {
+    .cal-cell { min-height: 64px; padding: 4px; }
+    .cal-chips { display: none; }
+    .cal-overflow { display: none; }
+    .cal-dots { display: flex; }
+    .cal-day-header { font-size: 9px; padding: 6px 4px; }
+    .cal-day-num { font-size: 10px; }
+    .today-bubble { width: 16px; height: 16px; font-size: 9px; }
+  }
+  @media (max-width: 420px) {
+    select { flex: 1 1 100px; min-width: 0; }
+    .cal-cell { min-height: 58px; }
+  }
+  @media (prefers-color-scheme: dark) {
+    html, body { background: #fffcf1 !important; color: #0f0450 !important; }
+    .cream-bar, .team-pills-row, .month-nav-bar { background: #fffcf1 !important; }
+    input[type="text"], select { background: #ffffff !important; color: #0f0450 !important; }
+    .table-wrap, .note-item, .cal-detail, .cal-grid-wrap { background: #ffffff !important; }
+    .cal-cell { background: #ffffff !important; }
+    .cal-cell.empty-cell { background: rgba(15,4,80,0.05) !important; }
+    #main-content { background: #fffcf1 !important; }
+  }
+
+  /* ── GANTT VIEW ─────────────────────────────────────────────────────────── */
+  #main-content.gantt-mode {
+    padding: 0;
+    height: calc(100vh - 58px);
+    overflow: hidden;
+  }
+  .gantt-outer {
+    height: 100%;
+    overflow: auto;
+    background: var(--horchata);
+  }
+  .gantt-inner {
+    min-width: max-content;
+  }
+  /* Sticky header row */
+  .gantt-thead {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: var(--horchata);
+    border-bottom: 1px solid rgba(15,4,80,0.12);
+    display: flex;
+    min-width: max-content;
+  }
+  .gantt-label-head {
+    flex-shrink: 0;
+    width: 140px;
+    min-width: 140px;
+    background: var(--horchata);
+    position: sticky;
+    left: 0;
+    z-index: 21;
+    padding: 8px 14px;
+    color: rgba(15,4,80,0.4);
+    font-family: var(--font-body);
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    display: flex;
+    align-items: flex-end;
+    border-right: 1px solid rgba(15,4,80,0.1);
+    box-shadow: 2px 0 4px rgba(15,4,80,0.06);
+  }
+  /* Month tick marks + labels in header */
+  .gantt-months {
+    position: relative;
+    flex-shrink: 0;
+    height: 36px;
+  }
+  .gantt-month-tick {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    border-left: 1px solid rgba(15,4,80,0.1);
+    pointer-events: none;
+  }
+  .gantt-month-label {
+    position: absolute;
+    top: 0;
+    padding: 8px 6px 6px;
+    font-family: var(--font-display);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: rgba(15,4,80,0.45);
+    text-transform: uppercase;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+  /* Today marker in header */
+  .gantt-today-tick {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    margin-left: -1px;
+    background: var(--hotsauce);
+    pointer-events: none;
+    z-index: 1;
+  }
+  .gantt-today-label-head {
+    position: absolute;
+    bottom: 4px;
+    transform: translateX(-50%);
+    font-family: var(--font-body);
+    font-size: 7.5px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--hotsauce);
+    pointer-events: none;
+    white-space: nowrap;
+  }
+  /* Body rows */
+  .gantt-body { display: flex; flex-direction: column; }
+  .gantt-row {
+    display: flex;
+    align-items: stretch;
+    border-bottom: 1px solid var(--border);
+    min-height: 52px;
+  }
+  .gantt-row:hover { background: rgba(15,4,80,0.015); }
+  /* Sticky label cell */
+  .gantt-label {
+    flex-shrink: 0;
+    width: 140px;
+    min-width: 140px;
+    position: sticky;
+    left: 0;
+    background: var(--horchata);
+    z-index: 5;
+    padding: 0 14px;
+    display: flex;
+    align-items: center;
+    border-right: 1px solid var(--border);
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    color: var(--hubble);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    box-shadow: 2px 0 6px rgba(0,0,0,0.04);
+  }
+  .gantt-row:hover .gantt-label { background: #fff8ee; }
+  /* Track area */
+  .gantt-track {
+    flex-shrink: 0;
+    position: relative;
+    min-height: 52px;
+  }
+  /* Alternating month stripe */
+  .gantt-month-stripe {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    background: rgba(15,4,80,0.025);
+    pointer-events: none;
+  }
+  /* Today bar in each row */
+  .gantt-row-today {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 1.5px;
+    margin-left: -0.75px;
+    background: var(--hotsauce);
+    opacity: 0.28;
+    pointer-events: none;
+    z-index: 0;
+  }
+  /* Connector line between dots */
+  .gantt-connector {
+    position: absolute;
+    top: 50%;
+    height: 2px;
+    background: #0f0450;
+    transform: translateY(-50%);
+    pointer-events: none;
+    border-radius: 1px;
+  }
+  /* Milestone dots */
+  .gantt-dot {
+    position: absolute;
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    cursor: pointer;
+    border: 1.5px solid rgba(15,4,80,0.18);
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+    z-index: 1;
+  }
+  .gantt-dot:hover {
+    transform: translate(-50%, -50%) scale(1.7);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.22);
+    z-index: 4;
+  }
+  .gantt-dot-done  { opacity: 0.2; }
+  .gantt-dot-overdue { border: 2px solid var(--hotsauce) !important; }
+  .gantt-dot-approx  { border-style: dashed !important; }
+  /* Floating tooltip */
+  .gantt-tooltip {
+    position: fixed;
+    background: var(--hubble);
+    color: #fff;
+    font-family: var(--font-body);
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1.45;
+    padding: 5px 10px;
+    border-radius: 4px;
+    pointer-events: none;
+    white-space: normal;
+    max-width: 280px;
+    opacity: 0;
+    transition: opacity 0.1s;
+    z-index: 2000;
+  }
+  .gantt-tooltip.visible { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div id="loading-bar"></div>
+
+<!-- Login overlay -->
+<div id="login-overlay">
+  <svg viewBox="0 0 243 200" fill="currentColor" aria-hidden="true">
+    <use href="#hkt-logo"/>
+  </svg>
+  <div class="login-title">Hyperakt Deadlines</div>
+  <button class="login-btn" onclick="signIn()">
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+      <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/><path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" fill="#34A853"/><path d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/><path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
+    </svg>
+    Sign in with Google
+  </button>
+  <div class="login-note">@hyperakt.com accounts only</div>
+</div>
+
+<!-- Hidden logo symbol -->
+<svg style="display:none" aria-hidden="true">
+  <symbol id="hkt-logo" viewBox="0 0 243 200">
+    <path d="M175.704,7.625C172.386,3.442,165.296,.011,159.947,.011l-150.227-.011C4.383,0,0,4.378,0,9.708V190.288c0,5.326,4.383,9.702,9.72,9.702l150.227,.01c5.356,0,12.439-3.442,15.766-7.615l67.173-84.763c3.311-4.192,3.311-11.048,0-15.229L175.704,7.625Zm-27.172,148.47h-31.567l34.674-43.822H70.321v43.822h-26.491V43.902h26.491v43.939h81.357l-34.798-43.939h31.574l44.241,56.125-44.163,56.068Z" fill="currentColor"/>
+  </symbol>
+</svg>
+
+<nav class="site-nav">
+  <div class="nav-row1">
+    <div class="nav-left">
+      <div class="nav-logo">
+        <svg aria-label="Hyperakt"><use href="#hkt-logo"/></svg>
+      </div>
+      <div class="nav-separator"></div>
+      <span class="nav-title">Deadlines</span>
+      <span class="nav-meta" id="last-synced-label">Updated —</span>
+    </div>
+    <div class="nav-right">
+      <div class="view-toggle">
+        <button class="view-btn active" id="btn-list">List</button>
+        <button class="view-btn" id="btn-cal">Cal</button>
+        <button class="view-btn" id="btn-gantt">Plan</button>
+        <button class="view-btn" id="btn-notes">Log</button>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<div class="cream-bar">
+  <div class="cream-controls">
+    <div class="search-wrap">
+      <span class="search-icon">&#9906;</span>
+      <input type="text" id="search" placeholder="Search deadlines, projects..." autocomplete="off" spellcheck="false">
+    </div>
+    <select id="filter-client"><option value="">All projects</option></select>
+    <button class="clear-btn" id="clear-btn">Clear</button>
+    <span id="result-text" class="nav-count">— deadlines</span>
+  </div>
+  <div class="cream-divider"></div>
+  <div class="team-pills-row" id="team-pills-row">
+    <button class="team-pill all-pill active" data-led="">All Teams</button>
+    <button class="team-pill led-creative" data-led="Creative">Design</button>
+    <button class="team-pill led-strategy" data-led="Strategy">Strat</button>
+    <button class="team-pill led-content" data-led="Content Strategy">UX Strat</button>
+    <button class="team-pill led-account" data-led="Account Management">AM</button>
+    <button class="team-pill led-pm" data-led="PM">PM</button>
+    <button class="team-pill led-client" data-led="Client">Client</button>
+  </div>
+</div>
+
+<div class="month-nav-bar" id="month-nav-bar">
+  <div class="month-nav-inner" id="month-nav-inner">
+    <!-- populated by JS -->
+  </div>
+</div>
+
+<main id="main-content" class="list-mode"></main>
+
+<script>
+// ── DATA ─────────────────────────────────────────────────────────────────────
+let RAW = [
+  // APRIL
+  { month:"April", date:"Apr 2",         project:"MNMF Website",     milestone:"Content Strategy Feedback Due; Sitemap dev begins",           star:false, note:"",                          led:"Content Strategy" },
+  { month:"April", date:"Apr 2–ongoing",  project:"Prysm Website",    milestone:"QA — site preview live; feedback via Notion",                 star:false, note:"",                          led:"Creative" },
+  { month:"April", date:"~Apr 22",        project:"Prysm Website",    milestone:"Site Launch",                                                 star:true,  note:"Agreed ~Apr 22 per Lupa team Apr 6", led:"Creative" },
+  { month:"April", date:"Apr 3",          project:"CHCF 30",          milestone:"Kickoff",                                                     star:true,  note:"",                          led:"Account Management + PM" },
+  { month:"April", date:"Apr 3",          project:"Mass Insight",      milestone:"Design System R1 Presentation",                               star:true,  note:"",                          led:"Creative" },
+  { month:"April", date:"~Apr 6",         project:"EFSC",             milestone:"Kickoff Meeting",                                             star:true,  note:"",                          led:"Account Management + PM" },
+  { month:"April", date:"Apr 6",          project:"MACP",             milestone:"R1 ToV + Key Messaging delivery",                             star:false, note:"",                          led:"Strategy" },
+  { month:"April", date:"Apr 6",          project:"RWJF",             milestone:"Complete BWED Cohort Carousel + Stories",                    star:true,  note:"",                          led:"Creative" },
+  { month:"April", date:"Apr 6",          project:"SJLF",             milestone:"Website Launch",                                              star:true,  note:"",                          led:"Creative" },
+  { month:"April", date:"Apr 7",          project:"TFA",              milestone:"Impact Report Work Session & Content Outline",                 star:true,  note:"",                          led:"Account Management" },
+  { month:"April", date:"Apr 8",          project:"SJLF",             milestone:"Final Client QA Tickets Due",                                 star:false, note:"",                          led:"Client" },
+  { month:"April", date:"Apr 8",          project:"TFA",              milestone:"Verbal Identity R2 Async Handoff",                            star:false, note:"",                          led:"Strategy" },
+  { month:"April", date:"Apr 8",          project:"SAAF",             milestone:"Brand Story & Design System R1",                              star:true,  note:"",                          led:"Strategy + Creative" },
+  { month:"April", date:"Apr 9",          project:"TFA",              milestone:"Impact Report feedback due",                                  star:false, note:"",                          led:"Client" },
+  { month:"April", date:"Apr 9",          project:"Mass Insight",     milestone:"Design System R1 Feedback Due",                               star:false, note:"",                          led:"Client" },
+  { month:"April", date:"Apr 9",          project:"FP",               milestone:"Client Onboarding",                                           star:true,  note:"",                          led:"Account Management" },
+  { month:"April", date:"Apr 10",         project:"SJLF",             milestone:"Final QA Complete",                                          star:false, note:"",                          led:"Creative" },
+  { month:"April", date:"Apr 13",         project:"SAAF",             milestone:"Feedback due (Brand Story & Design System R1)",               star:false, note:"",                          led:"Client" },
+  { month:"April", date:"Apr 17",          project:"CHCF 30", milestone:"Design System R1",                                            star:true,  note:"Date confirmed Apr 4 (was ~Apr 13)", led:"Creative" },
+  { month:"April", date:"Apr 21",          project:"CHCF 30", milestone:"Design System R1 Feedback Due",                               star:false, note:"",                          led:"Client" },
+  { month:"April", date:"Apr 13",         project:"MNMF",  milestone:"Internal Brand Guide R1 Check-in",                           star:false, note:"",                          led:"Creative" },
+  { month:"April", date:"Apr 13",         project:"MACP",             milestone:"Feedback on R1 due",                                         star:false, note:"",                          led:"Client" },
+  { month:"April", date:"Apr 13",         project:"TFA",              milestone:"Impact Report: R1 content delivery",                          star:false, note:"",                          led:"Strategy" },
+  { month:"April", date:"Apr 13–24",      project:"CLUA",             milestone:"Stakeholder Interviews",                                      star:false, note:"",                          led:"Strategy" },
+  { month:"April", date:"Apr 13–May 1",   project:"EFSC",             milestone:"Materials Review, Questionnaire, Interviews, Desk Research",  star:false, note:"",                          led:"Strategy" },
+  { month:"April", date:"Apr 14",         project:"MNMF Website",     milestone:"Internal Sitemap Review",                                    star:false, note:"",                          led:"Content Strategy" },
+  { month:"April", date:"Apr 14",         project:"SAAF",             milestone:"Board Meeting Presentation (4pm EST)",                        star:true,  note:"",                          led:"Creative" },
+  { month:"April", date:"Apr 15",         project:"MNMF Website",     milestone:"Sitemap Presentation R1",                                    star:true,  note:"",                          led:"Content Strategy" },
+  { month:"April", date:"Apr 16",         project:"MNMF",  milestone:"Brand Guide R1 (no logo)",                                   star:true,  note:"",                          led:"Creative" },
+  { month:"April", date:"Apr 16",         project:"JVS",        milestone:"Findings & Recommendations Presentation",                     star:true,  note:"",                          led:"Strategy" },
+  { month:"April", date:"Apr 17",         project:"MNMF Website",     milestone:"Sitemap Feedback Due",                                       star:false, note:"",                          led:"Client" },
+  { month:"April", date:"Apr 17",         project:"TFA",              milestone:"Content Writing R1 + Creative Direction Presentation",        star:true,  note:"",                          led:"Strategy + Creative" },
+  { month:"April", date:"Apr 17",         project:"TFA",              milestone:"Discussion of R1",                                            star:false, note:"",                          led:"Client" },
+  { month:"April", date:"Apr 17",         project:"JVS",        milestone:"Findings Report Final Delivery",                             star:false, note:"",                          led:"Account Management" },
+  { month:"April", date:"Apr 17",         project:"CLUA",             milestone:"Materials Review, Questionnaire & Desk Research",             star:false, note:"",                          led:"Strategy" },
+  { month:"April", date:"Apr 20",         project:"SAAF",             milestone:"Verbal Identity R3 — Final Delivery",                       star:false, note:"Added Apr 5 per Kade's Mar 25 timeline", led:"Strategy" },
+  { month:"April", date:"Apr 24",         project:"MNMF",  milestone:"Brand Guide Feedback Due",                                   star:false, note:"",                          led:"Client" },
+  { month:"April", date:"Apr 20",         project:"TFA",              milestone:"Feedback; Deroy starts designing",                           star:false, note:"",                          led:"Client" },
+  { month:"April", date:"~Apr 20",        project:"FP",  milestone:"Internal Kickoff (week of)",                                 star:false, note:"",                          led:"Account Management + PM" },
+  { month:"April", date:"Apr 21",         project:"Mass Insight",     milestone:"Design System R2 Presentation",                              star:true,  note:"Logo R1 decoupled — moved to week of May 4 per Julia Apr 17", led:"Creative" },
+  { month:"April", date:"Apr 21–22",      project:"MACP",             milestone:"SLT/CFG Retreat",                                            star:false, note:"",                          led:"Strategy" },
+  { month:"April", date:"Apr 22",         project:"JVS",        milestone:"Brand Vision Work Session",                                  star:true,  note:"",                          led:"Strategy" },
+  { month:"April", date:"Apr 23",         project:"Mass Insight",     milestone:"Naming Decisions",                                           star:false, note:"All-staff meeting + 1-day survey; exec team decides by EOW per Apr 16 update", led:"Client" },
+  { month:"April", date:"Apr 23",         project:"SAAF",             milestone:"Design System & Logo R2",                                    star:true,  note:"⚠️ Needs rescheduling",          led:"Creative" },
+  { month:"April", date:"Apr 24",         project:"MACP",             milestone:"R2 ToV + Key Messaging delivery",                            star:false, note:"",                          led:"Strategy" },
+  { month:"April", date:"Apr 24",         project:"TFA",              milestone:"Feedback",                                                   star:false, note:"",                          led:"Client" },
+  { month:"April", date:"Apr 28",         project:"TFA",              milestone:"Content Writing R2 + Design R1",                              star:true,  note:"",                          led:"Creative" },
+  { month:"April", date:"Apr 25",         project:"SAAF",             milestone:"Feedback due (Design System R2)",                            star:false, note:"",                          led:"Client" },
+  { month:"May",   date:"May 5",           project:"CHCF 30", milestone:"Design System R2",                                           star:true,  note:"Confirmed by Julia (was May 1)", led:"Creative" },
+  { month:"May",   date:"May 7",           project:"CHCF 30", milestone:"Design System R2 Feedback Due",                              star:false, note:"Confirmed by Julia (was May 5)", led:"Client" },
+  { month:"April", date:"~Apr 27",        project:"FP",  milestone:"Official Project Kickoff (week of)",                         star:true,  note:"",                          led:"Account Management + PM" },
+  { month:"May",   date:"~May 4",          project:"TFA",              milestone:"Content Final + Design Layout R2 ASYNC Handoff",             star:true,  note:"Moved from Apr 28 per Apr 17 update", led:"Creative" },
+  { month:"April", date:"Apr 30",         project:"TFA",              milestone:"Design R1 Feedback Due",                                     star:false, note:"By EOD Thu Apr 30 per Ariel", led:"Client" },
+  { month:"April", date:"~Apr 30",        project:"EFSC",             milestone:"Goal Setting Work Session – In Person (Sarasota)",           star:true,  note:"",                          led:"Strategy" },
+  // MAY
+  { month:"May", date:"May 4",            project:"JVS",        milestone:"Brand Strategy & Architecture R1",                           star:true,  note:"",                          led:"Strategy" },
+  { month:"May", date:"~May 4",           project:"CLUA",             milestone:"Findings & Recommendations Presentation",                    star:true,  note:"",                          led:"Strategy" },
+  { month:"May", date:"May 4",            project:"MACP",             milestone:"Feedback on R2 meeting",                                    star:false, note:"",                          led:"Client" },
+  { month:"May", date:"May 5",            project:"MNMF",             milestone:"Naming Recommendation Presentation",                         star:true,  note:"Tue May 5 3pm MT per Saro email Apr 9", led:"Strategy" },
+  { month:"May", date:"May 5",            project:"SAAF",             milestone:"Brand Guide Presentation",                                   star:true,  note:"⚠️ Needs rescheduling",          led:"Creative" },
+  { month:"May", date:"May 6",            project:"MNMF Website",     milestone:"Final Sitemap Delivery; Wireframes begin",                   star:false, note:"",                          led:"Account Management" },
+  { month:"May", date:"May 8",            project:"JVS",        milestone:"Feedback & Revisions",                                      star:false, note:"",                          led:"Client" },
+  { month:"May", date:"May 8",            project:"TFA",              milestone:"Design R2 + Funder/Impact Deck Template Presentation",      star:true,  note:"Per Ariel Apr 21",           led:"Creative" },
+  { month:"May", date:"May 15",           project:"TFA",              milestone:"Impact Report Final Delivery",                               star:false, note:"Moved from May 8 — prior to conference May 26–29", led:"Creative" },
+  { month:"May", date:"May 22",           project:"CHCF 30", milestone:"Design System Final Delivery",                             star:false, note:"Confirmed by Julia (was May 15)", led:"Account Management" },
+  { month:"May", date:"~May 11",          project:"EFSC",             milestone:"Findings & Recommendations + Brand Strategy R1",             star:true,  note:"",                          led:"Strategy" },
+  { month:"May", date:"~May 8",           project:"Mass Insight",     milestone:"Logo R1 Presentation + Collateral Materials R1",              star:true,  note:"End of week of May 4; per Julia Apr 17 update", led:"Creative" },
+  { month:"May", date:"~May 11",          project:"Mass Insight",     milestone:"Logo R1 + Collateral R1 Feedback Due",                        star:false, note:"5 days after Logo R1; per Julia Apr 17 update", led:"Client" },
+  { month:"May", date:"May 11",           project:"MACP",             milestone:"R3 ToV + Key Messaging delivery",                           star:false, note:"",                          led:"Strategy" },
+  { month:"May", date:"~May 11",          project:"TFA",              milestone:"Website Content Strategy R1 Presentation",                  star:true,  note:"",                          led:"Content Strategy" },
+  { month:"May", date:"May 14",           project:"JVS",        milestone:"Brand Strategy & Architecture R2",                          star:true,  note:"",                          led:"Strategy" },
+  { month:"May", date:"May 15",           project:"JVS",        milestone:"Brand Strategy Final Delivery",                             star:false, note:"",                          led:"Account Management" },
+  { month:"May", date:"May 11",           project:"TFA",              milestone:"One-Pager Template R1 Presentation",                       star:true,  note:"Moved from May 15 per Apr 17 update", led:"Creative" },
+  { month:"May", date:"~May 18",          project:"CLUA",             milestone:"Brand Vision Work Session",                                 star:true,  note:"",                          led:"Strategy + Creative" },
+  { month:"May", date:"~May 18",          project:"EFSC",             milestone:"Brand Strategy Development begins",                         star:false, note:"",                          led:"Strategy" },
+  { month:"May", date:"~May 18",          project:"TFA",              milestone:"Website Content Strategy Final Delivery",                   star:false, note:"",                          led:"Account Management" },
+  { month:"May", date:"May 22",           project:"CLUA",             milestone:"Creative Brief Final Handoff",                              star:false, note:"",                          led:"Account Management" },
+  { month:"May", date:"May 22",           project:"TFA",              milestone:"Collateral feedback; Funder/Impact Deck + One-Pager Final", star:false, note:"",                          led:"Client" },
+  // JUNE
+  { month:"June", date:"~Jun 1",          project:"CL IFI",           milestone:"IFI Discovery",                                               star:true,  note:"",                          led:"Strategy" },
+  { month:"June", date:"~Jun 1",          project:"EFSC",             milestone:"Brand Strategy Presentation",                               star:true,  note:"",                          led:"Strategy" },
+  { month:"June", date:"Jun 1",           project:"CLUA",             milestone:"Brand Strategy R1",                                         star:false, note:"",                          led:"Strategy" },
+  { month:"June", date:"Jun 1",           project:"MACP",             milestone:"Internal feedback discussion",                              star:false, note:"",                          led:"Client" },
+  { month:"June", date:"Jun 19",          project:"TFA",              milestone:"Overview Deck Presentation",                                 star:true,  note:"After conference (May 26–29); per Ariel Apr 21", led:"Creative" },
+  { month:"June", date:"~Jun 1",          project:"TFA",              milestone:"Website Work Session",                                      star:true,  note:"",                          led:"Content Strategy" },
+  { month:"June", date:"~Jun 1",          project:"SAAF",             milestone:"Strategic Implementation Kick-off",                         star:true,  note:"",                          led:"Account Management + PM" },
+  { month:"June", date:"Jun 9",           project:"JVS",        milestone:"Creative Brief Presentation",                               star:true,  note:"Confirmed Jun 9 per Ariel calendar invite", led:"Strategy + Creative" },
+  { month:"June", date:"~Jun 5",          project:"Mass Insight",     milestone:"Logo R2 Presentation + Brand Guide R1",                      star:true,  note:"Week of Jun 1; per Julia Apr 17 update", led:"Creative" },
+  { month:"June", date:"~Jun 7",          project:"Mass Insight",     milestone:"Logo R2 + Brand Guide R1 Feedback Due",                      star:false, note:"2 days after Logo R2; per Julia Apr 17 update", led:"Client" },
+  { month:"June", date:"~Jun 19",         project:"Mass Insight",     milestone:"Logo & Brand Guide Final Delivery",                           star:false, note:"Week of Jun 15; per Julia Apr 17 update", led:"Account Management" },
+  { month:"June", date:"Jun 22",          project:"Mass Insight",     milestone:"Implementation Support Kickoff",                              star:true,  note:"Per Julia Apr 17 update", led:"Account Management + PM" },
+  { month:"June", date:"Jun 8",           project:"MACP",             milestone:"R4 ToV + Key Messaging delivery",                           star:false, note:"",                          led:"Strategy" },
+  { month:"June", date:"Jun 15",          project:"CLUA",             milestone:"Brand Strategy R2",                                         star:false, note:"",                          led:"Strategy" },
+  { month:"June", date:"~Jun 15",         project:"EFSC",             milestone:"Brand Architecture Work Session",                           star:true,  note:"",                          led:"Strategy" },
+  { month:"June", date:"~Jun 15",         project:"TFA",              milestone:"Website Sitemap & Content Strategy R1",                     star:true,  note:"",                          led:"Content Strategy" },
+  { month:"June", date:"~Jun 15",         project:"SAAF",             milestone:"Brand Training with Staff",                                 star:false, note:"",                          led:"Strategy" },
+  { month:"June", date:"Jun 19",          project:"JVS",        milestone:"Creative Direction development",                            star:false, note:"",                          led:"Creative" },
+  { month:"June", date:"Jun 22",          project:"MNMF Website",     milestone:"Wireframe & Visual Design Presentation",                    star:true,  note:"",                          led:"Content Strategy" },
+  { month:"June", date:"Jun 22",          project:"CLUA",             milestone:"Board Meeting",                                             star:false, note:"",                          led:"Account Management" },
+  { month:"June", date:"Jun 23",          project:"MACP",             milestone:"SLT Meeting",                                               star:false, note:"",                          led:"Strategy" },
+  { month:"June", date:"Jun 26",          project:"JVS",        milestone:"Creative Direction Presentation",                           star:true,  note:"",                          led:"Creative" },
+  { month:"June", date:"~Jun 29",         project:"CLUA",             milestone:"Naming Brief",                                              star:false, note:"",                          led:"Strategy" },
+  { month:"June", date:"Jun 29",          project:"MACP",             milestone:"Feedback on R4",                                            star:false, note:"",                          led:"Client" },
+  { month:"June", date:"~Jun 29",         project:"EFSC",             milestone:"Naming Work Session",                                       star:true,  note:"",                          led:"Strategy" },
+  { month:"June", date:"~Jun 29",         project:"TFA",              milestone:"Website Sitemap & Content Strategy R2",                     star:true,  note:"",                          led:"Content Strategy" },
+  // JULY
+  { month:"July", date:"~Jul 1",          project:"CL IFI",           milestone:"Climate Lead Verbal Identity Update",                         star:true,  note:"",                          led:"Creative" },
+  { month:"July", date:"~Jul 3",          project:"Mass Insight",     milestone:"Collateral Materials R2 Final & Final Assets",                star:false, note:"Week of Jun 29; per Julia Apr 17 update", led:"Account Management + Creative" },
+  { month:"July", date:"Jul 6",           project:"Mass Insight",     milestone:"Brand Roadshow R1",                                          star:true,  note:"Per Julia Apr 17 update", led:"Creative" },
+  { month:"July", date:"Jul 6",           project:"CLUA",             milestone:"Naming R1",                                                 star:true,  note:"",                          led:"Strategy" },
+  { month:"July", date:"~Jul 6",          project:"EFSC",             milestone:"Naming Brief Delivery",                                     star:false, note:"",                          led:"Account Management" },
+  { month:"July", date:"Jul 7",           project:"MNMF Website",     milestone:"Wireframe & Visual Design R2 Presentation",                 star:true,  note:"",                          led:"Content Strategy" },
+  { month:"July", date:"Jul 13",          project:"MACP",             milestone:"R5 ToV + Key Messaging — Final Delivery",                   star:false, note:"",                          led:"Strategy" },
+  { month:"July", date:"Jul 13–24",       project:"CLUA",             milestone:"Audience Testing",                                          star:false, note:"",                          led:"Strategy" },
+  { month:"July", date:"Jul 13",          project:"JVS",        milestone:"Design System & Logo R1",                                   star:true,  note:"",                          led:"Creative" },
+  { month:"July", date:"~Jul 13",         project:"TFA",              milestone:"Content Writing R1",                                        star:true,  note:"",                          led:"Content Strategy" },
+  { month:"July", date:"Jul 17",          project:"MNMF Website",     milestone:"Deliver Content Creation Worksheet",                        star:false, note:"",                          led:"Account Management" },
+  { month:"July", date:"Jul 17",          project:"JVS",        milestone:"Feedback & Revisions",                                      star:false, note:"",                          led:"Client" },
+  { month:"July", date:"Jul 20",          project:"Mass Insight",     milestone:"Brand Roadshow R2 Delivery",                                 star:false, note:"Per Julia Apr 17 update", led:"Creative" },
+  { month:"July", date:"~Jul 20",         project:"EFSC",             milestone:"Naming R1; Verbal ID & Visual Identity dev begins",         star:true,  note:"",                          led:"Strategy" },
+  { month:"July", date:"Jul 24",          project:"MNMF Website",     milestone:"Wireframe R3 ASYNC Handoff; CMS dev begins",               star:false, note:"",                          led:"Account Management" },
+  { month:"July", date:"Jul 24",          project:"JVS",        milestone:"Design System R2",                                          star:true,  note:"",                          led:"Creative" },
+  { month:"July", date:"Jul 27",          project:"Mass Insight",     milestone:"Brand Training",                                             star:false, note:"Per Julia Apr 17 update", led:"Strategy" },
+  { month:"July", date:"Jul 27",          project:"CLUA",             milestone:"Naming R2; Verbal ID dev begins",                           star:false, note:"",                          led:"Strategy" },
+  { month:"July", date:"~Jul 27",         project:"EFSC",             milestone:"Creative Brief Presentation",                               star:true,  note:"",                          led:"Strategy + Creative" },
+  { month:"July", date:"~Jul 27",         project:"TFA",              milestone:"Content Writing R2",                                        star:true,  note:"",                          led:"Content Strategy" },
+  // AUGUST
+  { month:"August", date:"~Aug 1",        project:"CL IFI",           milestone:"IFI Brand Strategy",                                          star:true,  note:"",                          led:"Strategy" },
+  { month:"August", date:"~Aug 3",        project:"EFSC",             milestone:"Verbal ID R1; Creative Direction Presentation",             star:true,  note:"",                          led:"Strategy + Creative" },
+  { month:"August", date:"~Aug 3",        project:"TFA",              milestone:"UX/UI Design R1",                                           star:true,  note:"",                          led:"Creative" },
+  { month:"August", date:"Aug 7",         project:"JVS",        milestone:"Brand Guide Presentation",                                  star:true,  note:"",                          led:"Creative" },
+  { month:"August", date:"~Aug 10",       project:"CLUA",             milestone:"Verbal ID R1",                                              star:true,  note:"",                          led:"Strategy" },
+  { month:"August", date:"~Aug 10",       project:"EFSC",             milestone:"Naming R2 Delivery",                                        star:false, note:"",                          led:"Account Management" },
+  { month:"August", date:"Aug 12–14",     project:"MNMF",  milestone:"Logo R1 Presentation",                                      star:true,  note:"",                          led:"Creative" },
+  { month:"August", date:"Aug 14",        project:"JVS",        milestone:"Feedback & Revisions",                                      star:false, note:"",                          led:"Client" },
+  { month:"August", date:"~Aug 17",       project:"CLUA",             milestone:"Verbal ID R2",                                              star:true,  note:"",                          led:"Strategy" },
+  { month:"August", date:"~Aug 17",       project:"EFSC",             milestone:"Final Verbal ID Delivery",                                  star:false, note:"",                          led:"Account Management" },
+  { month:"August", date:"~Aug 17",       project:"TFA",              milestone:"Feedback; UX/UI Design R2",                                 star:true,  note:"",                          led:"Client / Creative" },
+  { month:"August", date:"Aug 21",        project:"JVS",        milestone:"Assets Delivery",                                           star:false, note:"",                          led:"Account Management" },
+  { month:"August", date:"Aug 24",        project:"MNMF",  milestone:"Logo R2 Presentation",                                      star:true,  note:"",                          led:"Creative" },
+  { month:"August", date:"~Aug 24",       project:"EFSC",             milestone:"Design System & Logo R1",                                   star:true,  note:"",                          led:"Creative" },
+  { month:"August", date:"~Aug 31",       project:"EFSC",             milestone:"R1 Brand Story delivery",                                   star:false, note:"",                          led:"Account Management" },
+  { month:"August", date:"~Aug 31",       project:"TFA",              milestone:"Website Documentation & Final Handoff",                     star:false, note:"",                          led:"Account Management" },
+  // SEPTEMBER
+  { month:"September", date:"~Sep 1",     project:"CL IFI",           milestone:"IFI Verbal Identity",                                         star:true,  note:"Sept–Oct",                  led:"Strategy + Creative" },
+  { month:"September", date:"Sep 3",      project:"MNMF",  milestone:"Final Brand Guide Delivery",                                star:false, note:"",                          led:"Account Management" },
+  { month:"September", date:"Sep 3",      project:"MNMF Website",     milestone:"CMS Due",                                                   star:false, note:"",                          led:"Account Management" },
+  { month:"September", date:"Sep 4–17",   project:"MNMF Website",     milestone:"QA, CMS Training, User Testing",                           star:false, note:"",                          led:"Account Management" },
+  { month:"September", date:"Sep 7",      project:"CLUA",             milestone:"Creative Brief",                                            star:true,  note:"",                          led:"Strategy + Creative" },
+  { month:"September", date:"~Sep 14",    project:"EFSC",             milestone:"R2 Brand Story & Messaging Final",                          star:false, note:"",                          led:"Account Management" },
+  { month:"September", date:"Sep 14–18",  project:"CLUA",             milestone:"Board Retreat (near NYC)",                                  star:false, note:"",                          led:"Account Management" },
+  { month:"September", date:"Sep 21",     project:"CLUA",             milestone:"Creative Directions Presentation",                          star:true,  note:"",                          led:"Creative" },
+  { month:"September", date:"~Sep 21",    project:"EFSC",             milestone:"Design System & Logo R2",                                   star:true,  note:"",                          led:"Creative" },
+  // OCT–DEC
+  { month:"Oct–Dec", date:"Oct 5",        project:"CLUA",             milestone:"Design System & Logo R1",                                   star:true,  note:"",                          led:"Creative" },
+  { month:"Oct–Dec", date:"~Oct 12",      project:"EFSC",             milestone:"Brand Guide Presentation",                                  star:true,  note:"",                          led:"Creative" },
+  { month:"Oct–Dec", date:"Oct 19–30",    project:"EFSC",             milestone:"Brand Guide Revisions & Final Delivery",                   star:false, note:"",                          led:"Creative" },
+  { month:"Oct–Dec", date:"Oct 25",       project:"CLUA",             milestone:"Design System & Logo R2",                                   star:true,  note:"",                          led:"Creative" },
+  { month:"Oct–Dec", date:"Nov 13",       project:"CLUA",             milestone:"Deliver Board Pack",                                        star:false, note:"",                          led:"Account Management" },
+  { month:"Oct–Dec", date:"Dec 8",        project:"CLUA",             milestone:"Board Meeting — brand must be ready",                       star:false, note:"",                          led:"Account Management" },
+  { month:"Oct–Dec", date:"Dec 14",       project:"CLUA",             milestone:"Final Brand Guide & Collateral Handoff",                    star:false, note:"",                          led:"Account Management" },
+];
+
+// ── SORT RAW BY DATE ──────────────────────────────────────────────────────────
+(function() {
+  const MN = {Jan:1,Feb:2,Mar:3,Apr:4,May:5,Jun:6,Jul:7,Aug:8,Sep:9,Oct:10,Nov:11,Dec:12};
+  function sk(r) {
+    const s = r.date.replace(/^~/,'').split(/[–]/)[0].trim();
+    if (!s || s === 'TBD') return 99999;
+    const p = s.split(' ');
+    return (MN[p[0]] || 0) * 100 + (parseInt(p[1]) || 0);
+  }
+  RAW.sort((a, b) => sk(a) - sk(b));
+})();
+
+// ── UPDATE LOG — newest first ─────────────────────────────────────────────────
+let UPDATE_LOG = [
+  {
+    date: "April 17, 2026",
+    entries: [
+      {
+        client: "TFA",
+        body: "Apr 23 Content Writing R2 / Design Layout R1 meeting <strong>cancelled</strong> (confirmed by Ariel; previously flagged as Kade proposes canceling). Impact Report design presentation moved to <strong>May 8</strong>. Apr 28 Content Final + Design Layout R2 handoff moved to <strong>~May 4</strong> (week of May 4 due to scheduling conflicts). One-Pager Template R1 moved from <strong>May 15 → May 11</strong>. New deadline added: <strong>Jun 4 — Overview Deck Presentation</strong> (after TFA conference May 26–29). Per Ariel's post-meeting next steps in #tfa."
+      },
+      {
+        client: "JVS",
+        body: "Creative Brief Presentation date corrected to <strong>Jun 9</strong> (was Jun 4–5). Ariel confirmed calendar invite sent for Jun 9 per official project timeline spreadsheet."
+      },
+      {
+        client: "MNMF",
+        body: "New deadline added: <strong>May 5 — Naming Recommendation Presentation</strong> (Tue May 5 at 3pm MT / 5pm ET). Larry agreed to a name change vote in May; brief naming presentation at that meeting. Per Saro's email flagged by Ariel in #mnmf Apr 9."
+      },
+      {
+        client: "Prysm Website",
+        body: "New deadline added: <strong>~Apr 22 — Site Launch</strong>. Ariel and Lupa team agreed on ~Apr 22/23 launch date during #hkt-lupa-prysm conversation Apr 6. Lupa confirmed date works; final QA feedback must be consolidated by end of that week."
+      },
+      {
+        client: "Mass Insight",
+        body: "Timeline fully restructured by Julia (canvas updated Apr 17). <strong>Logo R1 decoupled from DS R2</strong> — DS R2 remains <strong>Apr 21</strong> (solo). <strong>Apr 23</strong> is now Naming Decisions (all-staff meeting + 1-day survey). Logo R1 + Collateral Materials R1 moved to <strong>~May 8</strong> (end of week of May 4); feedback due ~May 11. Logo R2 + Brand Guide R1 Presentation: <strong>~Jun 5</strong> (week of Jun 1); feedback ~Jun 7. Logo & Brand Guide Final Delivery: <strong>~Jun 19</strong>. Collateral R2 Final & Final Assets: <strong>~Jul 3</strong>. Implementation Support phase added: Kickoff <strong>Jun 22</strong>, Brand Roadshow R1 <strong>Jul 6</strong>, R2 Delivery <strong>Jul 20</strong>, Brand Training <strong>Jul 27</strong>."
+      }
+    ]
+  },
+  {
+    date: "April 13, 2026",
+    entries: [
+      {
+        client: "CHCF 30th Anniv.",
+        body: "Main CHCF brand guide (separate from 30th Anniv. scope) finalized and delivered to client <strong>Apr 10–11</strong>. Deroy confirmed final edits done; Julia shared with client and final design assets, initiated Figma file ownership transfer. Julia updated project schedule in Canvas Apr 11. 30th Anniv. deliverables (signage, stage backdrop, conference program cover, webpage hero) in progress — Deroy collecting content from Julia.<br><br>Timeline updated via email from Julia (client confirmed May 5 at 11am–12pm PT): Design System R2 moved from <strong>May 1 → May 5</strong>; R2 feedback moved from <strong>May 5 → May 7</strong>; Final Delivery moved from <strong>May 15 → May 22</strong>. All updated in tracker."
+      },
+      {
+        client: "SAAF",
+        body: "Board presentation <strong>tomorrow Apr 14</strong> confirmed (in-person, 4pm). DS R1 feedback due date unclear — Deroy flagged today whether it was Apr 10 or Apr 13; awaiting Ariel's confirmation."
+      },
+      {
+        client: "SJLF",
+        body: "QA complete <strong>Apr 10</strong>. Julia flagging team is not available past this week without a change order; recommending client be directed to Webflow freelancers for any further fixes."
+      },
+      {
+        client: "Mass Insight",
+        body: "Naming decision not received by Apr 9 deadline. Ariel drafted scope creep flag Apr 10 — timeline regroup with Leslie (back from OOO) required to formally adjust scope and dates. <strong>Apr 21 presentation now at risk.</strong> No confirmed new dates yet."
+      },
+      {
+        client: "EFSC",
+        body: "Interviews on track for week of <strong>Apr 13–May 1</strong>. Goal Setting Workshop confirmed <strong>Apr 30</strong> (in-person). 9th interview request from client (Amity Schuler) flagged — Ariel to confirm whether to add or hold at 8 per scope."
+      },
+      {
+        client: "TFA",
+        body: "Internal scope/budget discussion ongoing — Impact Report, Overview Deck, Funder/Impact Deck, One-Pager, Website UX/UI all in scope. Deroy focusing on Impact Report first; reaching out to Aaron for content. Collateral stagger (funder preso + one-pager before conference, overview deck after) to be reflected in updated timeline."
+      },
+    ]
+  },
+  {
+    date: "April 9, 2026",
+    entries: [
+      {
+        client: "Mass Insight",
+        body: "Client (Samantha) asked to push naming decision to <strong>Apr 16</strong>, which would leave only 3 business days before the Apr 21 presentation. Ariel pushed back — feedback must arrive by <strong>Apr 9</strong> (today) or timeline shifts and scope conversation begins. Julia aligned. Note: weekly update lists presentation as <strong>Apr 22</strong> — confirm with Ariel whether Apr 21 or 22 is correct."
+      },
+      {
+        client: "SAAF",
+        body: "Design System R1 meeting <strong>Apr 8</strong> went well — client loving the direction. Minor logo center exploration still needed; some color tweaks to explore. Deroy sent updated presentation with revised logo mockups same night (updated colors, added Community Foundation landscape pages)."
+      },
+      {
+        client: "TFA",
+        body: "Client (KO) confirmed ok with impact report timeline. Requested collateral be staggered: funder presentation + one-pager before conference; overview deck post-conference. Ariel to adjust collateral timeline accordingly."
+      },
+      {
+        client: "SJLF",
+        body: "Website launch (<strong>Apr 6</strong>) delayed due to Webflow QA issues — client edits in Design mode breaking styles across pages. Deroy and Lupa resolving. Julia flagged: no further scope without a change order past this week."
+      },
+    ]
+  },
+  {
+    date: "April 5, 2026",
+    entries: [
+      {
+        client: "CHCF 30th Anniv.",
+        body: "Schedule revised by Julia (Apr 4) — confirmed with Deroy. Design System R1 moved from ~Apr 13 to <strong>Apr 17</strong>; R1 feedback added <strong>Apr 21</strong>; Design System R2 moved from ~Apr 27 to <strong>May 1</strong>; R2 feedback added <strong>May 5</strong>; Final Delivery confirmed as <strong>May 15</strong> (was ~May 11). All dates updated in the milestone list."
+      },
+      {
+        client: "SAAF",
+        body: "Verbal Identity R3 (Final) delivery added on <strong>Apr 20</strong>, per Kade's revised timeline shared Mar 25: Verbal R2 sent Apr 3 → discussion at Apr 8 Design System meeting → R3 (final) delivered Apr 20."
+      },
+      {
+        client: "TFA",
+        body: "Apr 23 Impact Report meeting cancellation confirmed. Kade proposed, Ariel aligned and planned to email client. Timeline stands: R1 content Apr 13, discussion Apr 17, Deroy designs from Apr 20, R2 content + design layout R1 async Apr 28, final May 8."
+      },
+      {
+        client: "Mass Insight",
+        body: "Added to tracker. Design System R1 presented <strong>Apr 3</strong>; client feedback due <strong>Apr 9</strong>. Logo R2 &amp; Brand Guide presentation moved to <strong>~May 11</strong> due to Andrea OOO."
+      },
+    ]
+  },
+  {
+    date: "April 3, 2026",
+    entries: [
+      { client: "CHCF 30th Anniv.", body: "30th Anniversary scope (separate from brand guide). Julia Zeltser running point (PM exception). Brand guide final delivery was due Apr 2 but blocked on client feedback — Genesis addressed all changes Apr 3." },
+      { client: "Founders Pledge",  body: "No specific design dates yet — phase ranges only (Discovery May–Jun, Brand Strategy Jun–Sep). Dates will populate post-kickoff (~Apr 27)." },
+      { client: "Prysm Website",    body: "Timeline lives in Lupa's Notion (not in Slack). Currently in active QA/development. Refractions pages + Donors landing page still WIP. Hard launch date TBD — follow up with Lupa." },
+      { client: "TFA",              body: "Apr 23 Impact Report meeting cancelled (confirmed Apr 2). Async delivery model going forward. Apr 28 R2 content + design layout R1 handoff and May 8 final remain on schedule." },
+      { client: "SAAF",             body: "Board presentation Apr 14 is in-person (2pm staff meeting, 4pm board). Creative Direction 'Puro San Antonio' was the clear favorite from R1 (Mar 27). Verbal R2 delivered Apr 3." },
+    ]
+  }
+];
+
+const MONTH_ORDER = ["April","May","June","July","August","September","Oct–Dec"];
+const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const MONTH_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+// 3-letter display labels for the month nav bar
+const MONTH_NAV_LABELS = {
+  "April":"Apr","May":"May","June":"Jun","July":"Jul",
+  "August":"Aug","September":"Sep","Oct–Dec":"Oct–Dec"
+};
+const CAL_MONTHS  = [3,4,5,6,7,8,9,10,11];
+// Map from MONTH_ORDER label → calendar month index (for anchor IDs)
+const MONTH_TO_CAL = {
+  "April":3,"May":4,"June":5,"July":6,
+  "August":7,"September":8,"Oct–Dec":9
+};
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let currentView = 'list';
+let calState    = { year:2026, selectedDay:null, selectedMonth:null };
+let calDayMap   = {}; // month# → {day → [events]}
+let activeLed   = ''; // replaces select filter
+let showAll     = false;
+let completedSet = new Set(); // populated from Firestore
+
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+
+// Completion state helpers
+function rowKey(r) { return r.project + '|' + r.date + '|' + r.milestone; }
+function isCompleted(r) { return completedSet.has(rowKey(r)); }
+function setCompleted(r, val) {
+  const k = rowKey(r);
+  if (val) completedSet.add(k); else completedSet.delete(k);
+  if (r._docId && window._db) {
+    window._db.collection('deadlines').doc(r._docId).update({ completed: val }).catch(console.error);
+    // Log the completion action
+    const user = _auth.currentUser;
+    const completedBy = (user && (user.displayName || user.email)) || 'Unknown';
+    window._db.collection('updateLog').add({
+      type:        'completion',
+      action:      val ? 'completed' : 'uncompleted',
+      project:     r.project,
+      milestone:   r.milestone,
+      dateISO:     r.dateISO || '',
+      completedBy,
+      sortDate:    firebase.firestore.FieldValue.serverTimestamp(),
+    }).catch(console.error);
+  }
+}
+
+// Parse a date string to a Date object for comparison
+function parseRowDate(dateStr) {
+  const s = dateStr.replace(/^~/,'').split(/[–]/)[0].trim();
+  const MN = {Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
+  const p = s.split(' ');
+  if (p.length < 2) return null;
+  const m = MN[p[0]]; const d = parseInt(p[1]);
+  if (m === undefined || !d) return null;
+  return new Date(2026, m, d);
+}
+
+function isPast(r) {
+  const d = parseRowDate(r.date);
+  if (!d) return false;
+  const today = new Date(); today.setHours(0,0,0,0);
+  return d < today;
+}
+
+// Return Monday timestamp of the week containing dateStr (for week-break detection)
+function weekStart(dateStr) {
+  const d = parseRowDate(dateStr);
+  if (!d) return null;
+  const day = d.getDay(); // 0=Sun
+  d.setDate(d.getDate() - (day === 0 ? 6 : day - 1));
+  return d.getTime();
+}
+
+// Return 3-letter uppercase day of week for a date string
+function dayOfWeek(dateStr) {
+  const d = parseRowDate(dateStr);
+  if (!d) return '';
+  return ['SUN','MON','TUE','WED','THU','FRI','SAT'][d.getDay()];
+}
+
+// Extract just the numeric day from a date string (e.g. "Apr 17" → "17", "~Apr 13" → "~13", "Apr 13–24" → "13")
+function dayNum(dateStr) {
+  const approx = dateStr.startsWith('~');
+  const match = dateStr.match(/\d+/);
+  if (!match) return '–';
+  return approx ? `<em>${match[0]}</em>` : match[0];
+}
+
+const LED_MAP = {
+  "creative":          { cls: "led-creative", label: "Design" },
+  "ux strategy":       { cls: "led-content",  label: "UX Strat" },
+  "content strategy":  { cls: "led-content",  label: "UX Strat" },
+  "strategy":          { cls: "led-strategy", label: "Strat" },
+  "account management":{ cls: "led-account",  label: "AM" },
+  "client":            { cls: "led-client",   label: "Client" },
+  "pm":                { cls: "led-pm",       label: "PM" },
+};
+
+// Returns array of {cls, label} for a led string (handles combined like "Strategy + Creative")
+function ledTags(led) {
+  const l = led.toLowerCase();
+  const out = [];
+  // Split on '+', '/', 'and', '&'
+  const parts = l.split(/\s*[\+\/&]\s*|\s+and\s+/);
+  parts.forEach(p => {
+    const trimmed = p.trim();
+    const match = Object.keys(LED_MAP).find(k => trimmed.includes(k));
+    if (match && !out.find(o => o.cls === LED_MAP[match].cls)) {
+      out.push(LED_MAP[match]);
+    }
+  });
+  return out.length ? out : [{ cls: "led-account", label: led }];
+}
+
+function ledClass(led) { return ledTags(led)[0].cls; } // for calendar chips/dots
+
+function ledBadgesHtml(led) {
+  return ledTags(led).map(t =>
+    `<span class="led-badge ${t.cls}">${t.label}</span>`
+  ).join(' ');
+}
+
+function parseEntryDate(dateStr) {
+  const mm = {Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
+  const clean = dateStr.replace(/^~/, '').trim();
+  const first = clean.split(/[–\-]/)[0].trim();
+  const m = first.match(/^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d+)/);
+  if (m) return { year:2026, month:mm[m[1]], day:parseInt(m[2]) };
+  return null;
+}
+function isApprox(s) { return s.trim().startsWith('~'); }
+
+function getFiltered() {
+  const q      = document.getElementById('search').value.toLowerCase().trim();
+  const client = document.getElementById('filter-client').value;
+  const led    = activeLed; // e.g. "Creative", "Strategy", "Content Strategy", "Account Management", "PM", "Client"
+  return RAW.filter(r => {
+    if (client && r.project !== client) return false;
+    if (led) {
+      // Match if any of the row's split parts contain the active led key
+      const tags = ledTags(r.led);
+      const ledKey = led.toLowerCase();
+      const matchKey = Object.keys(LED_MAP).find(k => k === ledKey);
+      if (!matchKey || !tags.find(t => t.cls === LED_MAP[matchKey].cls)) return false;
+    }
+    if (q) {
+      const hay = [r.date, r.project, r.milestone, r.led, r.note].join(' ').toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+}
+
+function populateDropdowns() {
+  const clients = [...new Set(RAW.map(r => r.project))].sort();
+  const cSel = document.getElementById('filter-client');
+  const current = cSel.value;
+  cSel.innerHTML = '<option value="">All projects</option>';
+  clients.forEach(c => { const o = document.createElement('option'); o.value = c; o.textContent = c; cSel.appendChild(o); });
+  if (current) cSel.value = current; // preserve selection across reloads
+}
+
+function updateCount(n) {
+  document.getElementById('result-text').innerHTML =
+    `<span class="result-count">${n}</span> deadline${n!==1?'s':''}`;
+}
+
+
+// ── MONTH NAV BAR ─────────────────────────────────────────────────────────────
+function setMonthNavTop() {
+  const creamBar = document.querySelector('.cream-bar');
+  const nav      = document.getElementById('month-nav-bar');
+  if (!nav) return;
+  // Position month nav bar to stick just below the cream bar (which itself sticks below site-nav)
+  const creamBottom = creamBar ? creamBar.getBoundingClientRect().height +
+    parseFloat(getComputedStyle(creamBar).top || 56) : 130;
+  nav.style.top = Math.round(creamBottom) + 'px';
+}
+
+function buildMonthNav(filtered) {
+  // Determine which months have data given current filters
+  const hasList = {}; // month label → bool
+  const hasCal  = {}; // month index → bool
+  MONTH_ORDER.forEach(m => hasList[m] = false);
+  CAL_MONTHS.forEach(m => hasCal[m] = false);
+  filtered.forEach(r => {
+    if (hasList.hasOwnProperty(r.month)) hasList[r.month] = true;
+    const pd = parseEntryDate(r.date);
+    if (pd && hasCal.hasOwnProperty(pd.month)) hasCal[pd.month] = true;
+  });
+
+  const inner = document.getElementById('month-nav-inner');
+  inner.innerHTML = MONTH_ORDER.map(m => {
+    const hasData = currentView === 'list' ? hasList[m] : hasCal[MONTH_TO_CAL[m]];
+    const label   = MONTH_NAV_LABELS[m] || m;
+    return `<button class="month-nav-btn${hasData ? '' : ' dimmed'}" data-month="${m}">${label}</button>`;
+  }).join('');
+
+  // Show All / Hide Completed button (list, cal, and plan views)
+  const navBar = document.getElementById('month-nav-bar');
+  let showAllBtn = document.getElementById('show-all-btn');
+  if (currentView === 'list' || currentView === 'cal' || currentView === 'gantt') {
+    if (!showAllBtn) {
+      showAllBtn = document.createElement('button');
+      showAllBtn.id = 'show-all-btn';
+      navBar.appendChild(showAllBtn);
+      showAllBtn.addEventListener('click', () => { showAll = !showAll; render(); });
+    }
+    showAllBtn.textContent = showAll ? 'Hide Completed' : 'Show All';
+    showAllBtn.className = 'show-all-btn' + (showAll ? ' active' : '');
+    showAllBtn.style.display = '';
+  } else if (showAllBtn) {
+    showAllBtn.style.display = 'none';
+  }
+
+  // Set sticky top after DOM paint
+  requestAnimationFrame(setMonthNavTop);
+
+  // Wire click → scroll to anchor
+  inner.querySelectorAll('.month-nav-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = 'month-anchor-' + btn.dataset.month.replace(/[^a-z]/gi,'');
+      const el = document.getElementById(id);
+      if (!el) return;
+      // Account for all sticky headers above
+      const navBar      = document.getElementById('month-nav-bar');
+      const navBarBottom = navBar ? navBar.getBoundingClientRect().bottom : 0;
+      const top = el.getBoundingClientRect().top + window.scrollY - navBarBottom - 12;
+      window.scrollTo({ top, behavior: 'smooth' });
+    });
+  });
+}
+
+// Highlight the month nav button for whatever month is most visible
+function setupMonthNavSpy() {
+  if (window._monthNavObserver) window._monthNavObserver.disconnect();
+  const anchors = document.querySelectorAll('[id^="month-anchor-"]');
+  if (!anchors.length) return;
+
+  const obs = new IntersectionObserver(entries => {
+    let best = null, bestRatio = -1;
+    entries.forEach(e => { if (e.intersectionRatio > bestRatio) { bestRatio = e.intersectionRatio; best = e.target; } });
+    if (!best) return;
+    const label = best.dataset.month;
+    document.querySelectorAll('.month-nav-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.month === label);
+    });
+    // Scroll pill into view in the nav bar
+    const activeBtn = document.querySelector(`.month-nav-btn[data-month="${label}"]`);
+    if (activeBtn) activeBtn.scrollIntoView({ block:'nearest', inline:'nearest', behavior:'smooth' });
+  }, { rootMargin: '-20% 0px -70% 0px', threshold: [0, 0.1, 0.5] });
+
+  anchors.forEach(a => obs.observe(a));
+  window._monthNavObserver = obs;
+}
+
+// ── LIST VIEW ─────────────────────────────────────────────────────────────────
+function renderList() {
+  let filtered = getFiltered();
+
+  // In default mode hide past items that are completed; keep them in showAll
+  if (!showAll) {
+    filtered = filtered.filter(r => !(isPast(r) && isCompleted(r)));
+  }
+
+  updateCount(filtered.length);
+  const main = document.getElementById('main-content');
+  main.className = 'list-mode';
+  main.style.padding = '';
+
+  const byMonth = {};
+  MONTH_ORDER.forEach(m => byMonth[m] = []);
+  filtered.forEach(r => { if (byMonth[r.month]) byMonth[r.month].push(r); });
+
+  let html = '';
+  MONTH_ORDER.forEach(month => {
+    const rows = byMonth[month];
+    const anchorId = 'month-anchor-' + month.replace(/[^a-z]/gi,'');
+    html += `<div id="${anchorId}" data-month="${month}" style="${rows.length ? '' : 'display:none'}">`;
+    if (rows.length) {
+      html += `<section class="month-section">
+        <h2 class="month-header">${month} <span class="month-count"><span class="result-count">${rows.length}</span> item${rows.length!==1?'s':''}</span></h2>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Date</th><th>Client</th><th>Deadline</th><th>Led by</th><th>Done</th></tr></thead>
+          <tbody>${rows.map((r, i) => {
+            const past    = isPast(r);
+            const done    = isCompleted(r);
+            const overdue = past && !done;
+            const dimmed  = done && showAll;
+            const key     = rowKey(r);
+            const nextRow = rows[i + 1];
+            const weekBreak = nextRow && weekStart(r.date) !== null && weekStart(nextRow.date) !== null && weekStart(r.date) !== weekStart(nextRow.date);
+            const classes = [dimmed ? 'tr-completed-show' : '', weekBreak ? 'tr-week-end' : ''].filter(Boolean).join(' ');
+            return `<tr class="${classes}" data-key="${key}">
+              <td class="td-date"><div class="td-date-inner">${dayOfWeek(r.date) ? `<span class="td-date-dow">${dayOfWeek(r.date)}</span>` : ''}${dayNum(r.date)}</div></td>
+              <td class="td-project"><span class="project-tag">${r.project}</span></td>
+              <td class="td-milestone${overdue ? ' td-deadline-overdue' : ''}">
+                ${r.star ? '<span class="star-flag"></span>' : ''}${r.milestone}
+                ${r.note ? `<br><span class="note-tag">${r.note}</span>` : ''}
+              </td>
+              <td class="td-led"><div class="td-led-inner">${ledBadgesHtml(r.led)}</div></td>
+              <td class="td-complete"><input type="checkbox" data-key="${key}"${done ? ' checked' : ''}></td>
+            </tr>`;
+          }).join('')}
+          </tbody>
+        </table></div>
+      </section>`;
+    }
+    html += `</div>`;
+  });
+
+  if (!filtered.length) html = `<div class="empty-state"><div class="empty-state-title">Nothing found</div><p>Try adjusting your filters or search term.</p></div>`;
+  main.innerHTML = html;
+
+  // Wire checkbox handlers
+  main.querySelectorAll('input[type="checkbox"][data-key]').forEach(cb => {
+    cb.addEventListener('change', function() {
+      const r = RAW.find(x => rowKey(x) === this.dataset.key);
+      if (!r) return;
+      setCompleted(r, this.checked);
+      if (!showAll && isPast(r) && this.checked) {
+        // Fade out then re-render
+        const tr = this.closest('tr');
+        tr.style.opacity = '0';
+        setTimeout(() => renderList(), 300);
+      } else {
+        // Just toggle dim in place
+        this.closest('tr').classList.toggle('tr-completed-show', this.checked && showAll);
+      }
+    });
+  });
+
+  buildMonthNav(filtered);
+  setupMonthNavSpy();
+}
+
+// ── CALENDAR VIEW — FULL SCROLL ────────────────────────────────────────────────
+function buildAllDayMaps(filtered, year) {
+  const maps = {};
+  CAL_MONTHS.forEach(m => maps[m] = {});
+  filtered.forEach(r => {
+    const pd = parseEntryDate(r.date);
+    if (pd && pd.year === year && maps[pd.month] !== undefined) {
+      if (!maps[pd.month][pd.day]) maps[pd.month][pd.day] = [];
+      maps[pd.month][pd.day].push(r);
+    }
+  });
+  return maps;
+}
+
+function calGridHtml(dayMap, year, month, filtered) {
+  const today    = new Date();
+  const isCurMo  = today.getFullYear()===year && today.getMonth()===month;
+  const todayDay = today.getDate();
+  const firstDow = new Date(year, month, 1).getDay();
+  const daysInMo = new Date(year, month+1, 0).getDate();
+  const totalCells = Math.ceil((firstDow + daysInMo) / 7) * 7;
+  const MAX_CHIPS  = 3;
+
+  let html = '';
+  for (let i = 0; i < totalCells; i++) {
+    const day    = i - firstDow + 1;
+    const valid  = day >= 1 && day <= daysInMo;
+    const isToday = isCurMo && day === todayDay;
+    const events = valid ? (dayMap[day] || []) : [];
+    const hasEvt = events.length > 0;
+    const isSel  = calState.selectedDay === day && calState.selectedMonth === month && valid;
+    const overflow = Math.max(0, events.length - MAX_CHIPS);
+    const visible  = events.slice(0, MAX_CHIPS);
+
+    const cls = ['cal-cell',
+      !valid  ? 'empty-cell'    : '',
+      hasEvt  ? 'has-events'    : '',
+      isToday ? 'today-cell'    : '',
+      isSel   ? 'selected-cell' : '',
+    ].filter(Boolean).join(' ');
+
+    const dayNumHtml = valid
+      ? `<div class="cal-day-num">${isToday ? `<span class="today-bubble">${day}</span>` : day}</div>` : '';
+
+    const chipsHtml = visible.map(r => {
+      const ac   = isApprox(r.date) ? ' approx' : '';
+      const done = isCompleted(r) ? ' cal-chip-done' : '';
+      return `<span class="cal-chip ${ledClass(r.led)}${ac}${done}">${r.star?'<span class="cal-chip-star"></span>':''}<b>${r.project}</b> ${r.milestone}</span>`;
+    }).join('') + (overflow ? `<div class="cal-overflow">+${overflow} more</div>` : '');
+
+    const MAX_MINI = 4;
+    const miniVisible  = events.slice(0, MAX_MINI);
+    const miniOverflow = Math.max(0, events.length - MAX_MINI);
+    const dotsHtml = miniVisible.map(r =>
+      `<span class="cal-mini-chip ${ledClass(r.led)}${isCompleted(r) ? ' cal-chip-done' : ''}">${r.project}</span>`
+    ).join('') + (miniOverflow ? `<span class="cal-mini-overflow">+${miniOverflow}</span>` : '');
+
+    html += `<div class="${cls}" data-day="${valid?day:''}" data-month="${month}">${dayNumHtml}<div class="cal-chips">${chipsHtml}</div><div class="cal-dots">${dotsHtml}</div></div>`;
+  }
+  return html;
+}
+
+function renderCal() {
+  let filtered = getFiltered();
+  if (!showAll) filtered = filtered.filter(r => !(isPast(r) && isCompleted(r)));
+  updateCount(filtered.length);
+  const main = document.getElementById('main-content');
+  main.className = 'cal-scroll-mode';
+
+  const { year, selectedDay, selectedMonth } = calState;
+  const allMaps = buildAllDayMaps(filtered, year);
+
+  // Build one block per month
+  let html = '<div class="cal-scroll-outer">';
+
+  MONTH_ORDER.forEach(label => {
+    const monthIdx = MONTH_TO_CAL[label];
+    const dayMap   = allMaps[monthIdx] || {};
+    const total    = Object.values(dayMap).reduce((s,a)=>s+a.length,0);
+    const anchorId = 'month-anchor-' + label.replace(/[^a-z]/gi,'');
+
+    // For Oct–Dec block show Oct, Nov, Dec grids stacked
+    const monthsToRender = label === 'Oct–Dec' ? [9,10,11] : [monthIdx];
+
+    html += `<div id="${anchorId}" data-month="${label}" class="cal-month-block">`;
+
+    if (label === 'Oct–Dec') {
+      // Heading for the whole block
+      const octNovDecTotal = [9,10,11].reduce((s,m) =>
+        s + Object.values(allMaps[m]||{}).reduce((ss,a)=>ss+a.length,0), 0);
+      html += `<h2 class="cal-month-heading">Oct–Dec <span class="cal-month-heading-count"><span class="result-count">${octNovDecTotal}</span> milestone${octNovDecTotal!==1?'s':''}</span></h2>`;
+      [9,10,11].forEach(mi => {
+        const dm = allMaps[mi] || {};
+        const mt = Object.values(dm).reduce((s,a)=>s+a.length,0);
+        html += `<h3 style="font-family:var(--font-display);font-size:1.4rem;font-weight:600;color:var(--hubble);margin:20px 0 8px;letter-spacing:-0.01em;">${MONTH_NAMES[mi]}<span style="font-family:var(--font-body);font-size:11px;font-weight:400;color:var(--text-muted);letter-spacing:0.04em;text-transform:uppercase;margin-left:10px;"><span class="result-count">${mt}</span> milestone${mt!==1?'s':''}</span></h3>`;
+        html += `<div class="cal-grid-wrap" style="margin-bottom:12px;">
+          <div class="cal-grid" data-gridmonth="${mi}">
+            <div class="cal-day-header">Sun</div><div class="cal-day-header">Mon</div>
+            <div class="cal-day-header">Tue</div><div class="cal-day-header">Wed</div>
+            <div class="cal-day-header">Thu</div><div class="cal-day-header">Fri</div>
+            <div class="cal-day-header">Sat</div>
+            ${calGridHtml(dm, year, mi, filtered)}
+          </div>
+        </div>`;
+      });
+    } else {
+      html += `<h2 class="cal-month-heading">${MONTH_NAMES[monthIdx]} <span class="cal-month-heading-count"><span class="result-count">${total}</span> milestone${total!==1?'s':''}</span></h2>`;
+      html += `<div class="cal-grid-wrap">
+        <div class="cal-grid" data-gridmonth="${monthIdx}">
+          <div class="cal-day-header">Sun</div><div class="cal-day-header">Mon</div>
+          <div class="cal-day-header">Tue</div><div class="cal-day-header">Wed</div>
+          <div class="cal-day-header">Thu</div><div class="cal-day-header">Fri</div>
+          <div class="cal-day-header">Sat</div>
+          ${calGridHtml(dayMap, year, monthIdx, filtered)}
+        </div>
+      </div>`;
+    }
+
+    // Detail drawer (shown below whichever month's day is selected)
+    if (selectedMonth === monthIdx || (label === 'Oct–Dec' && [9,10,11].includes(selectedMonth))) {
+      const dm = allMaps[selectedMonth] || {};
+      const detailEvents = selectedDay ? (dm[selectedDay] || []) : [];
+      if (detailEvents.length) {
+        const dateLabel = `${MONTH_NAMES[selectedMonth]} ${selectedDay}, ${year}`;
+        html += `<div class="cal-detail visible" id="cal-detail">
+          <div class="cal-detail-header">
+            <span class="cal-detail-date">${dateLabel}</span>
+            <span class="cal-detail-count">${detailEvents.length} milestone${detailEvents.length!==1?'s':''}</span>
+            <button class="cal-detail-close" id="cal-detail-close">&#215;</button>
+          </div>
+          ${detailEvents.map(r=>`
+            <div class="cal-detail-row">
+              <span class="project-tag">${r.project}</span>
+              <div class="cal-detail-ms">
+                ${r.star?'<span class="star-flag"></span>':''}${r.milestone}
+                ${isApprox(r.date)?'<div class="cal-detail-approx">~ approximate date</div>':''}
+                ${r.note?`<div class="cal-detail-note">${r.note}</div>`:''}
+              </div>
+              <div class="cal-detail-led">${ledBadgesHtml(r.led)}</div>
+            </div>`).join('')}
+        </div>`;
+      }
+    }
+
+    html += `</div>`; // .cal-month-block
+  });
+
+  html += '</div>'; // .cal-scroll-outer
+  main.innerHTML = html;
+
+  // Click delegation on the whole content area for calendar cells
+  main.addEventListener('click', e => {
+    const cell = e.target.closest('.cal-cell.has-events');
+    if (cell) {
+      const day   = parseInt(cell.dataset.day);
+      const month = parseInt(cell.dataset.month);
+      if (calState.selectedDay === day && calState.selectedMonth === month) {
+        calState.selectedDay = null; calState.selectedMonth = null;
+      } else {
+        calState.selectedDay = day; calState.selectedMonth = month;
+      }
+      renderCal();
+      setTimeout(() => {
+        const detail = document.getElementById('cal-detail');
+        if (detail) detail.scrollIntoView({ behavior:'smooth', block:'nearest' });
+      }, 40);
+      return;
+    }
+    const closeBtn = e.target.closest('#cal-detail-close');
+    if (closeBtn) { calState.selectedDay = null; calState.selectedMonth = null; renderCal(); }
+  }, { once: true });
+
+  buildMonthNav(filtered);
+  setupMonthNavSpy();
+}
+
+// ── DISPATCH ──────────────────────────────────────────────────────────────────
+function render() {
+  if (currentView === 'list')        renderList();
+  else if (currentView === 'cal')    renderCal();
+  else if (currentView === 'gantt')  renderGantt();
+  else                               renderNotes();
+}
+
+// ── NOTES VIEW ────────────────────────────────────────────────────────────────
+function renderNotes() {
+  const main = document.getElementById('main-content');
+  main.className = 'notes-mode';
+  main.style.padding = '';
+  document.getElementById('month-nav-bar').style.display = 'none';
+
+  // Format a raw updateLog doc into { client, body }
+  function fmtLogDoc(doc) {
+    if (doc.type === 'sync') {
+      const who = doc.trigger === 'automatic'
+        ? '🕐 Scheduled'
+        : `⚡ Manual — <strong>${doc.triggeredBy}</strong>`;
+      const summary = doc.errors && doc.errors.length
+        ? `${doc.deadlineCount} deadlines, ${doc.projectsUpdated} updated, ${doc.projectsSkipped} unchanged. ⚠️ ${doc.errors.join('; ')}`
+        : `${doc.deadlineCount} deadlines — ${doc.projectsUpdated} updated, ${doc.projectsSkipped} unchanged`;
+      return { client: 'Sync', body: `${who} — ${summary}` };
+    }
+    if (doc.type === 'completion') {
+      const verb = doc.action === 'completed' ? 'marked complete' : 'unchecked';
+      return { client: doc.project, body: `<strong>${doc.completedBy}</strong> ${verb}: ${doc.milestone}` };
+    }
+    // Legacy grouped format (date + entries array)
+    return null;
+  }
+
+  // Group docs by date label
+  function groupByDate(docs) {
+    const groups = [];
+    const seen = new Map();
+    for (const doc of docs) {
+      // Legacy format already has date + entries
+      if (doc.date && Array.isArray(doc.entries)) {
+        const key = doc.date;
+        if (!seen.has(key)) { seen.set(key, []); groups.push({ date: key, entries: seen.get(key) }); }
+        seen.get(key).push(...doc.entries);
+        continue;
+      }
+      const entry = fmtLogDoc(doc);
+      if (!entry) continue;
+      // Get date label from sortDate (Firestore Timestamp) or fallback
+      let dateLabel = 'Recent';
+      if (doc.sortDate && doc.sortDate.toDate) {
+        dateLabel = doc.sortDate.toDate().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+      }
+      if (!seen.has(dateLabel)) { seen.set(dateLabel, []); groups.push({ date: dateLabel, entries: seen.get(dateLabel) }); }
+      seen.get(dateLabel).push(entry);
+    }
+    return groups;
+  }
+
+  // Build update log sections (newest first = first in array)
+  const grouped = groupByDate(UPDATE_LOG);
+  const logHtml = grouped.map((group, gi) => `
+    <div class="log-date-group">
+      <div class="log-date-heading">
+        ${group.date}
+        ${gi === 0 ? '<span class="log-new-badge">New</span>' : ''}
+      </div>
+      ${group.entries.map(e => `
+        <div class="log-update-item">
+          <span class="log-update-client">${e.client}</span>
+          <span class="log-update-body">${e.body}</span>
+        </div>`).join('')}
+    </div>`).join('');
+
+  main.innerHTML = `<div class="notes-view-inner">
+    <h2 class="notes-view-heading">Log</h2>
+    ${logHtml}
+  </div>`;
+}
+
+// ── GANTT VIEW ────────────────────────────────────────────────────────────────
+function renderGantt() {
+  const main = document.getElementById('main-content');
+  main.className = 'gantt-mode';
+
+  // ── Config ─────────────────────────────────────────────────────────────────
+  const LABEL_W    = 140;
+  const PX_PER_DAY = 9;
+  const START      = new Date(2026, 3,  1);   // Apr 1
+  const END        = new Date(2026, 11, 31);  // Dec 31
+  const TOTAL_DAYS = Math.round((END - START) / 86400000) + 1;
+  const CHART_W    = TOTAL_DAYS * PX_PER_DAY;
+
+  function xOf(d) {
+    return Math.round((d - START) / 86400000) * PX_PER_DAY;
+  }
+
+  // ── Dot color via existing ledClass ────────────────────────────────────────
+  const LED_BG = {
+    'led-creative': '#c8f4ff',
+    'led-strategy': '#e5fb9e',
+    'led-content':  '#fff0a0',
+    'led-account':  '#ffe2d0',
+    'led-client':   '#e8e4ff',
+    'led-pm':       '#d0f0e0',
+  };
+  function dotBg(led) { return LED_BG[ledClass(led)] || '#ddd8f0'; }
+
+  // ── Header: month ticks + labels ───────────────────────────────────────────
+  const MONTH_NAMES = ['Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  let monthTicksHtml = '';
+  for (let i = 0; i < 9; i++) {
+    const md = new Date(2026, 3 + i, 1);
+    if (md > END) break;
+    const x = xOf(md);
+    monthTicksHtml += `<div class="gantt-month-tick" style="left:${x}px"></div>`;
+    monthTicksHtml += `<div class="gantt-month-label" style="left:${x + 5}px">${MONTH_NAMES[i]}</div>`;
+  }
+
+  // ── Today ──────────────────────────────────────────────────────────────────
+  const todayD = new Date(); todayD.setHours(0,0,0,0);
+  const todayX = xOf(todayD);
+
+  // ── Build project rows from filtered data ──────────────────────────────────
+  let filtered = getFiltered();
+  if (!showAll) filtered = filtered.filter(r => !(isPast(r) && isCompleted(r)));
+  const projOrder = [];
+  const projMap   = {};
+  filtered.forEach(r => {
+    if (!projMap[r.project]) { projMap[r.project] = []; projOrder.push(r.project); }
+    projMap[r.project].push(r);
+  });
+
+  // ── Alternating month stripe helper ────────────────────────────────────────
+  function monthStripes() {
+    let s = '';
+    for (let i = 0; i < 9; i++) {
+      if (i % 2 === 0) continue;
+      const ms = new Date(2026, 3 + i, 1);
+      const me = new Date(2026, 4 + i, 1);
+      if (ms > END) break;
+      const x1 = xOf(ms);
+      const x2 = Math.min(xOf(me), CHART_W);
+      s += `<div class="gantt-month-stripe" style="left:${x1}px;width:${x2 - x1}px"></div>`;
+    }
+    return s;
+  }
+
+  // ── Row HTML ───────────────────────────────────────────────────────────────
+  const rowsHtml = projOrder.map(proj => {
+    const items = projMap[proj].filter(r => parseRowDate(r.date));
+    if (!items.length) return '';
+    items.sort((a, b) => parseRowDate(a.date) - parseRowDate(b.date));
+
+    // Connector line from first to last dot
+    const xs     = items.map(r => xOf(parseRowDate(r.date)));
+    const minX   = Math.min(...xs);
+    const maxX   = Math.max(...xs);
+    const conn   = items.length > 1
+      ? `<div class="gantt-connector" style="left:${minX}px;width:${maxX - minX}px"></div>`
+      : '';
+
+    // Dots
+    const dots = items.map(r => {
+      const x       = xOf(parseRowDate(r.date));
+      const done    = isCompleted(r);
+      const overdue = isPast(r) && !done;
+      const approx  = r.date.startsWith('~');
+      const bg      = dotBg(r.led);
+      const cls     = ['gantt-dot',
+        done    ? 'gantt-dot-done'    : '',
+        overdue ? 'gantt-dot-overdue' : '',
+        approx  ? 'gantt-dot-approx'  : '',
+      ].filter(Boolean).join(' ');
+      const tip = `${r.milestone} · ${r.date.replace(/^~/,'')}`;
+      return `<div class="${cls}" style="left:${x}px;background:${bg}" data-tip="${tip.replace(/"/g,'&quot;')}"></div>`;
+    }).join('');
+
+    return `
+      <div class="gantt-row">
+        <div class="gantt-label" title="${proj}">${proj}</div>
+        <div class="gantt-track" style="width:${CHART_W}px">
+          ${monthStripes()}
+          ${conn}
+          ${dots}
+          <div class="gantt-row-today" style="left:${todayX}px"></div>
+        </div>
+      </div>`;
+  }).join('');
+
+  // ── Render ─────────────────────────────────────────────────────────────────
+  main.innerHTML = `
+    <div class="gantt-outer" id="gantt-outer">
+      <div class="gantt-inner">
+        <div class="gantt-thead">
+          <div class="gantt-label-head">Project</div>
+          <div class="gantt-months" style="width:${CHART_W}px">
+            ${monthTicksHtml}
+            <div class="gantt-today-tick" style="left:${todayX}px">
+              <div class="gantt-today-label-head" style="left:1px">Today</div>
+            </div>
+          </div>
+        </div>
+        <div class="gantt-body">${rowsHtml}</div>
+      </div>
+    </div>
+    <div class="gantt-tooltip" id="gantt-tooltip"></div>`;
+
+  // ── Tooltip wiring ─────────────────────────────────────────────────────────
+  const tip = document.getElementById('gantt-tooltip');
+  main.querySelectorAll('.gantt-dot').forEach(dot => {
+    dot.addEventListener('mouseenter', () => {
+      tip.textContent = dot.dataset.tip;
+      tip.classList.add('visible');
+    });
+    dot.addEventListener('mousemove', e => {
+      tip.style.left = (e.clientX + 14) + 'px';
+      tip.style.top  = (e.clientY - 38) + 'px';
+    });
+    dot.addEventListener('mouseleave', () => tip.classList.remove('visible'));
+  });
+}
+
+// ── TOGGLE ────────────────────────────────────────────────────────────────────
+function setActiveBtn(activeId) {
+  ['btn-list','btn-cal','btn-notes','btn-gantt'].forEach(id => {
+    document.getElementById(id).classList.toggle('active', id === activeId);
+  });
+}
+
+function showControls(show) {
+  // Hide/show cream-bar and month-nav when in notes view (no filtering needed)
+  document.querySelector('.cream-bar').style.display = show ? '' : 'none';
+  // Month nav handled per-render
+}
+
+document.getElementById('btn-list').addEventListener('click', () => {
+  currentView = 'list';
+  setActiveBtn('btn-list');
+  showControls(true);
+  document.getElementById('month-nav-bar').style.display = '';
+  render();
+});
+document.getElementById('btn-cal').addEventListener('click', () => {
+  currentView = 'cal';
+  setActiveBtn('btn-cal');
+  showControls(true);
+  document.getElementById('month-nav-bar').style.display = '';
+  render();
+});
+document.getElementById('btn-notes').addEventListener('click', () => {
+  currentView = 'notes';
+  setActiveBtn('btn-notes');
+  showControls(false);
+  render();
+});
+document.getElementById('btn-gantt').addEventListener('click', () => {
+  currentView = 'gantt';
+  setActiveBtn('btn-gantt');
+  showControls(true);
+  document.getElementById('month-nav-bar').style.display = '';
+  render();
+});
+
+['search','filter-client'].forEach(id => {
+  document.getElementById(id).addEventListener(id==='search'?'input':'change', () => {
+    calState.selectedDay = null; calState.selectedMonth = null; render();
+  });
+});
+
+// Team pill filtering
+document.getElementById('team-pills-row').addEventListener('click', e => {
+  const pill = e.target.closest('.team-pill');
+  if (!pill) return;
+  activeLed = pill.dataset.led;
+  document.querySelectorAll('.team-pill').forEach(p => p.classList.remove('active'));
+  pill.classList.add('active');
+  calState.selectedDay = null; calState.selectedMonth = null;
+  render();
+});
+
+document.getElementById('clear-btn').addEventListener('click', () => {
+  document.getElementById('search').value = '';
+  document.getElementById('filter-client').value = '';
+  activeLed = '';
+  document.querySelectorAll('.team-pill').forEach(p => p.classList.remove('active'));
+  document.querySelector('.team-pill.all-pill').classList.add('active');
+  calState.selectedDay = null; calState.selectedMonth = null;
+  render();
+});
+
+window.addEventListener('resize', setMonthNavTop);
+
+// ── FIREBASE INIT ─────────────────────────────────────────────────────────────
+const firebaseConfig = {
+  apiKey:            "AIzaSyASJMzX5mKPEkHmhPBx7LyEnwEO7X5jysQ",
+  authDomain:        "hkt-deadlines.firebaseapp.com",
+  projectId:         "hkt-deadlines",
+  storageBucket:     "hkt-deadlines.firebasestorage.app",
+  messagingSenderId: "613510969110",
+  appId:             "1:613510969110:web:dc88670143b22234054237"
+};
+
+firebase.initializeApp(firebaseConfig);
+const _auth = firebase.auth();
+const _db   = firebase.firestore();
+window._db  = _db;
+
+function signIn() {
+  const provider = new firebase.auth.GoogleAuthProvider();
+  provider.setCustomParameters({ hd: 'hyperakt.com' });
+  _auth.signInWithPopup(provider).catch(err => alert('Sign-in failed: ' + err.message));
+}
+
+function signOut() { _auth.signOut(); }
+
+function showLoading(on) {
+  document.getElementById('loading-bar').style.display = on ? 'block' : 'none';
+}
+
+let _deadlinesUnsub = null;
+let _logUnsub       = null;
+
+function loadData() {
+  showLoading(true);
+
+  // Real-time deadlines listener
+  if (_deadlinesUnsub) _deadlinesUnsub();
+  _deadlinesUnsub = _db.collection('deadlines')
+    .orderBy('dateISO')
+    .onSnapshot(snapshot => {
+      RAW = snapshot.docs.map(doc => ({ _docId: doc.id, ...doc.data() }));
+      completedSet = new Set(RAW.filter(r => r.completed).map(r => rowKey(r)));
+      populateDropdowns();
+      render();
+      showLoading(false);
+    }, err => {
+      console.error('Firestore error:', err);
+      showLoading(false);
+    });
+
+  // Last synced timestamp
+  _db.collection('meta').doc('sync').get().then(doc => {
+    if (doc.exists && doc.data().lastSynced) {
+      const ts = doc.data().lastSynced.toDate();
+      const label = ts.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      document.getElementById('last-synced-label').textContent = 'Updated ' + label;
+    }
+  });
+
+  // Real-time update log listener
+  if (_logUnsub) _logUnsub();
+  _logUnsub = _db.collection('updateLog')
+    .orderBy('sortDate', 'desc')
+    .onSnapshot(snapshot => {
+      UPDATE_LOG = snapshot.docs.map(doc => doc.data());
+      if (currentView === 'notes') render();
+    });
+}
+
+_auth.onAuthStateChanged(user => {
+  if (user && user.email && user.email.endsWith('@hyperakt.com')) {
+    document.getElementById('login-overlay').style.display = 'none';
+    loadData();
+  } else {
+    if (user) _auth.signOut(); // wrong domain
+    document.getElementById('login-overlay').style.display = 'flex';
+    if (_deadlinesUnsub) { _deadlinesUnsub(); _deadlinesUnsub = null; }
+    if (_logUnsub)       { _logUnsub();       _logUnsub = null; }
+  }
+});
+</script>
+</body>
+</html>

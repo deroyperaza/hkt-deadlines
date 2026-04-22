@@ -1,0 +1,27 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isHyperakt() {
+      return request.auth != null &&
+             request.auth.token.email.matches('.*@hyperakt\\.com');
+    }
+    match /deadlines/{id} {
+      allow read: if isHyperakt();
+      allow update: if isHyperakt() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['completed']);
+      allow write: if false;
+    }
+    match /projects/{id} {
+      allow read: if isHyperakt();
+      allow write: if false;
+    }
+    match /updateLog/{id} {
+      allow read:   if isHyperakt();
+      allow create: if isHyperakt();
+      allow update, delete: if false;
+    }
+    match /meta/{id} {
+      allow read: if isHyperakt();
+      allow write: if false;
+    }
+  }
+}
