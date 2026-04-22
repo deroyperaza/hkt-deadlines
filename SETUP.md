@@ -181,9 +181,12 @@ Send your team the Firebase Hosting URL (e.g. `https://hkt-deadlines.web.app`). 
 
 ## Day-to-day usage
 
-- **Nightly auto-sync** runs every day at 8am UTC (4am ET) automatically
+- **Nightly auto-sync** runs every day at 2am ET automatically
 - **On-demand sync**: type `/sync-deadlines` in Slack any time after the PM updates a canvas
 - **Completion state**: checking a deadline complete in the web app writes to Firestore instantly — all team members see it update live
+- **Live at**: https://deadlines.hyperakt.com
+- **Mobile**: add to iPhone home screen via Safari → Share → Add to Home Screen for app-like access
+- **Log view**: shows all syncs with change details (added/changed/removed deadlines) and completion events
 
 ---
 
