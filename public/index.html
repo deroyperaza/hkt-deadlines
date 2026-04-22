@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Hyperakt Deadlines</title>
+<link rel="shortcut icon" href="/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon-v2.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@400;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
 <!-- Firebase SDK -->
@@ -161,6 +164,12 @@
     overflow: hidden;
     text-overflow: ellipsis;
     margin-right: 20px;
+  }
+  .nav-title-icon {
+    display: none;
+    color: rgba(255,252,241,0.85);
+    margin-right: 16px;
+    line-height: 0;
   }
   .nav-meta {
     font-family: var(--font-body);
@@ -469,6 +478,13 @@
   .log-update-client { font-weight: 700; color: var(--hubble); padding-top: 1px; }
   .log-update-body { color: rgba(15,4,80,0.65); }
   .log-update-body strong { color: var(--hubble); font-weight: 600; }
+  .change-list { margin: 8px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 3px; }
+  .change-list li { font-size: 12px; color: rgba(15,4,80,0.6); display: flex; align-items: baseline; gap: 5px; }
+  .change-type { font-size: 11px; font-weight: 700; width: 14px; flex-shrink: 0; text-align: center; }
+  .change-added   { color: #2a9d5c; }
+  .change-changed { color: #e07b00; }
+  .change-removed { color: #c0392b; }
+  .change-detail  { opacity: 0.7; font-style: italic; }
   .standing-notes-heading {
     font-family: var(--font-display);
     font-size: 11px;
@@ -892,7 +908,13 @@
     #main-content.list-mode { padding: 0 16px 60px; }
     .cal-scroll-outer { padding: 0 16px 60px; }
     .nav-meta { display: none; }
+    .nav-title { display: none; }
+    .nav-title-icon { display: inline-flex; }
     thead th, tbody td { padding: 8px 12px; }
+    /* Narrower client column on mobile */
+    thead th:nth-child(2), tbody td:nth-child(2) { width: 100px; }
+    /* Week separator must extend under sticky Done column */
+    tbody tr.tr-week-end td:nth-child(5) { border-bottom: 2px solid rgba(15,4,80,0.38) !important; }
     .cal-detail-row { grid-template-columns: auto 1fr; }
     .cal-detail-row .led-badge { display: none; }
   }
@@ -1158,6 +1180,9 @@
       </div>
       <div class="nav-separator"></div>
       <span class="nav-title">Deadlines</span>
+      <span class="nav-title-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      </span>
       <span class="nav-meta" id="last-synced-label">Updated —</span>
     </div>
     <div class="nav-right">
@@ -1183,7 +1208,7 @@
   </div>
   <div class="cream-divider"></div>
   <div class="team-pills-row" id="team-pills-row">
-    <button class="team-pill all-pill active" data-led="">All Teams</button>
+    <button class="team-pill all-pill active" data-led="">All</button>
     <button class="team-pill led-creative" data-led="Creative">Design</button>
     <button class="team-pill led-strategy" data-led="Strategy">Strat</button>
     <button class="team-pill led-content" data-led="Content Strategy">UX Strat</button>
@@ -1710,9 +1735,24 @@ function buildMonthNav(filtered) {
   // Set sticky top after DOM paint
   requestAnimationFrame(setMonthNavTop);
 
-  // Wire click → scroll to anchor
+  // Wire click → scroll to anchor (list/cal) or scroll gantt (plan)
   inner.querySelectorAll('.month-nav-btn').forEach(btn => {
     btn.addEventListener('click', () => {
+      if (currentView === 'gantt') {
+        // Scroll gantt-outer horizontally to that month
+        const monthIdx = MONTH_TO_CAL[btn.dataset.month]; // 0-indexed JS month
+        if (monthIdx !== undefined) {
+          const ganttOuter = document.getElementById('gantt-outer');
+          if (ganttOuter) {
+            const GANTT_START   = new Date(2026, 3, 1);
+            const PX_PER_DAY    = 9;
+            const md            = new Date(2026, monthIdx, 1);
+            const scrollX       = Math.round((md - GANTT_START) / 86400000) * PX_PER_DAY;
+            ganttOuter.scrollTo({ left: scrollX, behavior: 'smooth' });
+          }
+        }
+        return;
+      }
       const id = 'month-anchor-' + btn.dataset.month.replace(/[^a-z]/gi,'');
       const el = document.getElementById(id);
       if (!el) return;
@@ -2028,7 +2068,19 @@ function renderNotes() {
       const summary = doc.errors && doc.errors.length
         ? `${doc.deadlineCount} deadlines, ${doc.projectsUpdated} updated, ${doc.projectsSkipped} unchanged. ⚠️ ${doc.errors.join('; ')}`
         : `${doc.deadlineCount} deadlines — ${doc.projectsUpdated} updated, ${doc.projectsSkipped} unchanged`;
-      return { client: 'Sync', body: `${who} — ${summary}` };
+      let changesHtml = '';
+      if (doc.changes && doc.changes.length > 0) {
+        const icons = { added: '＋', changed: '✎', removed: '−' };
+        const lines = doc.changes.map(c => {
+          const icon = icons[c.type] || '·';
+          const detail = c.type === 'changed'
+            ? `${c.field}: <em>${c.from}</em> → <em>${c.to}</em>`
+            : c.date ? `${c.date}` : '';
+          return `<li><span class="change-type change-${c.type}">${icon}</span> <strong>${c.project}</strong> — ${c.milestone}${detail ? ' <span class="change-detail">(' + detail + ')</span>' : ''}</li>`;
+        }).join('');
+        changesHtml = `<ul class="change-list">${lines}</ul>`;
+      }
+      return { client: 'Sync', body: `${who} — ${summary}${changesHtml}` };
     }
     if (doc.type === 'completion') {
       const verb = doc.action === 'completed' ? 'marked complete' : 'unchecked';
@@ -2312,10 +2364,23 @@ const _auth = firebase.auth();
 const _db   = firebase.firestore();
 window._db  = _db;
 
+// Handle redirect sign-in result (standalone/iOS home screen mode)
+_auth.getRedirectResult().catch(err => {
+  if (err.code !== 'auth/no-auth-event') {
+    alert('Sign-in failed: ' + err.message);
+  }
+});
+
 function signIn() {
   const provider = new firebase.auth.GoogleAuthProvider();
   provider.setCustomParameters({ hd: 'hyperakt.com' });
-  _auth.signInWithPopup(provider).catch(err => alert('Sign-in failed: ' + err.message));
+  // Standalone (home screen web app) blocks popups — use redirect instead
+  const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
+  if (isStandalone) {
+    _auth.signInWithRedirect(provider).catch(err => alert('Sign-in failed: ' + err.message));
+  } else {
+    _auth.signInWithPopup(provider).catch(err => alert('Sign-in failed: ' + err.message));
+  }
 }
 
 function signOut() { _auth.signOut(); }

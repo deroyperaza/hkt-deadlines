@@ -15,7 +15,7 @@ setGlobalOptions({ region: 'us-east1' });
 const PROJECTS = [
   { name: 'TFA',          channelId: 'C0A8BS18KJP', canvasId: 'F0AARPS72CR' },
   { name: 'MNMF',         channelId: 'C092D6W7MR7', canvasId: 'F0920FBC9M0' },
-  { name: 'MNMF Website', channelId: 'C0AMK4MCQMP', canvasId: 'F0AMKG43X8R' },
+  { name: 'MNMF Web', channelId: 'C0AMK4MCQMP', canvasId: 'F0AMKG43X8R' },
   { name: 'Mass Insight', channelId: 'C09BW8FH0FP', canvasId: 'F09BJT2A347', colOrder: 'date-first' },
   { name: 'SAAF',         channelId: 'C09NJ3S0GKZ', canvasId: 'F09RC6EMX8R' },
   { name: 'CHCF 30',      channelId: 'C09NBBJ5ATT', canvasId: 'F09NJJHAC4F' },
@@ -81,8 +81,9 @@ function inferLed(phase, milestone = '', project = '') {
   const m = milestone.toLowerCase();
 
   // Milestone-level rules (highest priority)
-  if (m.includes('feedback')) return 'Client';
-  if (m.includes('ooo'))      return 'Client';
+  if (m.includes('feedback'))         return 'Client';
+  if (m.includes('ooo'))              return 'Client';
+  if (m.includes('naming decision'))  return 'Client';
 
   // Multi-team milestones
   if (m.includes('board meeting')) return 'Strategy + Creative + Account Management';
@@ -112,6 +113,7 @@ function cleanMilestone(raw) {
     .replace(/:star:/g, '').replace(/:package:/g, '').replace(/:octagonal_sign:/g, '')
     .replace(/:kermit_typing:/g, '').replace(/!\[\]\(slack_date:[^)]+\)/g, '')
     .replace(/~~[^~]*~~/g, '') // remove strikethrough
+    .replace(/\bTO BE SCHEDULED\b/gi, '')
     .replace(/\*\*/g, '').replace(/\*/g, '')
     .replace(/<br>/gi, ' ').replace(/\s+/g, ' ').trim();
 }
@@ -201,11 +203,6 @@ function parseCanvasHtml(projectName, html, options = {}) {
       const statusHtml = $status ? ($status.html() || '') : '';
       const statusText = $status ? $status.text() : '';
 
-      // Debug: log status cell HTML so we can see Quip's checkbox format
-      if ($status && statusHtml.trim()) {
-        console.log(`[status-debug] ${projectName} | ${milestone} | html: ${statusHtml.slice(0, 300)}`);
-      }
-
       const completed  = /class="[^"]*checked[^"]*"/.test(statusHtml) ||
                          statusText.includes('[x]') ||
                          ($status && $status.find('.checked, [data-checked]').length > 0);
@@ -246,7 +243,13 @@ function parseCanvasHtml(projectName, html, options = {}) {
 //   "Design Layout R1 + Content Writing Final Delivery(ASYNC HANDOFF)Feedback on Design Layout R1: April 30th"
 // Splits them into a separate Client-tagged deadline entry.
 
-const FEEDBACK_RE = /(?:\(ASYNC HANDOFF\))?\s*Feedback(?:\s+on\s+([^:]+))?:\s*((?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\s+\d+(?:st|nd|rd|th)?)/i;
+// Matches feedback trailers like:
+//   "Feedback: May 13th"
+//   "Feedback on Design Layout R1: April 30th"
+//   "(ASYNC HANDOFF) Feedback on ...: April 30th"
+//   "Feedback in 5 days: May 11th"
+//   "Feedback in 2 days"  (no date — strip trailer only, no new entry)
+const FEEDBACK_RE = /\s*(?:\(ASYNC HANDOFF\)\s*)?Feedback(?:\s+in\s+\d+\s+days)?(?:\s+on\s+([^:]+))?(?::\s*((?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\s+\d+(?:st|nd|rd|th)?))?/i;
 
 function expandFeedbackDates(deadlines) {
   const result = [];
@@ -257,7 +260,7 @@ function expandFeedbackDates(deadlines) {
     // Clean original: strip from the feedback marker onward
     const cleanedMilestone = d.milestone.slice(0, match.index).replace(/\s*\(ASYNC HANDOFF\)\s*$/i, '').trim();
     const feedbackLabel    = match[1] ? `Feedback on ${match[1].trim()}` : `Feedback on ${cleanedMilestone}`;
-    const fbDateInfo       = parseSlackDate(match[2]);
+    const fbDateInfo       = match[2] ? parseSlackDate(match[2]) : null;
 
     if (cleanedMilestone) {
       result.push({ ...d, milestone: cleanedMilestone, led: inferLed(d.phase, cleanedMilestone, d.project) });
@@ -276,10 +279,11 @@ function expandFeedbackDates(deadlines) {
         led:      'Client',
         star:     false,
       });
-    } else {
-      // Couldn't parse the date — keep original intact
-      if (!cleanedMilestone) result.push(d);
+    } else if (!cleanedMilestone) {
+      // No date and no cleaned milestone — keep original intact
+      result.push(d);
     }
+    // else: no date but cleanedMilestone exists — trailer stripped, no feedback entry created
   }
   return result;
 }
@@ -438,7 +442,7 @@ async function runSync(triggerInfo = { trigger: 'automatic', triggeredBy: 'Sched
     try {
       const res = await fetch(`https://slack.com/api/files.info?file=${project.canvasId}`, {
         headers: { Authorization: `Bearer ${token}` },
-        signal: AbortSignal.timeout(45000),
+        signal: AbortSignal.timeout(20000),
       });
       const json = await res.json();
       if (!json.ok) throw new Error(`${project.name}: Slack API error: ${json.error}`);
@@ -446,7 +450,7 @@ async function runSync(triggerInfo = { trigger: 'automatic', triggeredBy: 'Sched
       return { project, file: json.file };
     } catch (err) {
       const isTimeout = err.name === 'TimeoutError' || err.name === 'AbortError';
-      if (isTimeout && attempt < 3) {
+      if (isTimeout && attempt < 2) {
         console.log(`[meta] ${project.name}: timeout on attempt ${attempt}, retrying...`);
         await new Promise(r => setTimeout(r, 1000));
         return fetchFilesInfo(project, attempt + 1);
@@ -514,6 +518,7 @@ async function runSync(triggerInfo = { trigger: 'automatic', triggeredBy: 'Sched
         projectsUpdated:  0,
         projectsSkipped:  PROJECTS.length - errors.length,
         errors,
+        changes:          [],
       }),
     ]);
     return { count: totalDeadlines, projects: 0, errors, skipped: PROJECTS.length - errors.length };
@@ -545,6 +550,8 @@ async function runSync(triggerInfo = { trigger: 'automatic', triggeredBy: 'Sched
   );
 
   // ── Phase 4: Write to Firestore ───────────────────────────────────────────────
+  const allChanges = []; // accumulate across all projects for the log entry
+
   for (const result of downloadResults) {
     if (result.status === 'rejected') {
       errors.push(result.reason?.message || String(result.reason));
@@ -552,6 +559,44 @@ async function runSync(triggerInfo = { trigger: 'automatic', triggeredBy: 'Sched
     }
     const { project, deadlines, newTs } = result.value;
     try {
+      // Remove stale docs — any existing Firestore doc for this project
+      // whose docId is no longer produced by the current parse.
+      const newDocIds = new Set(deadlines.map(d => d.docId));
+      const existingSnap = await db.collection('deadlines')
+        .where('project', '==', project.name).get();
+
+      // Build lookup of existing docs for change detection
+      const existingMap = {};
+      existingSnap.docs.forEach(doc => { existingMap[doc.id] = doc.data(); });
+
+      // Detect added / field-changed deadlines
+      const TRACK = ['milestone', 'date', 'phase', 'led'];
+      for (const d of deadlines) {
+        const prev = existingMap[d.docId];
+        if (!prev) {
+          allChanges.push({ type: 'added', project: d.project, milestone: d.milestone, date: d.date });
+        } else {
+          for (const field of TRACK) {
+            if (prev[field] !== d[field]) {
+              allChanges.push({ type: 'changed', project: d.project, milestone: d.milestone, field, from: prev[field] || '', to: d[field] || '' });
+              break; // one change entry per deadline (most significant field)
+            }
+          }
+        }
+      }
+
+      const stale = existingSnap.docs.filter(doc => !newDocIds.has(doc.id));
+      if (stale.length > 0) {
+        stale.forEach(doc => {
+          const data = doc.data();
+          allChanges.push({ type: 'removed', project: data.project || project.name, milestone: data.milestone || doc.id, date: data.date || '' });
+        });
+        const deleteBatch = db.batch();
+        stale.forEach(doc => deleteBatch.delete(doc.ref));
+        await deleteBatch.commit();
+        console.log(`[cleanup] ${project.name}: deleted ${stale.length} stale doc(s)`);
+      }
+
       const batch = db.batch();
       for (const d of deadlines) {
         const { docId, ...data } = d;
@@ -597,6 +642,7 @@ async function runSync(triggerInfo = { trigger: 'automatic', triggeredBy: 'Sched
       projectsUpdated:  synced,
       projectsSkipped:  skipped,
       errors,
+      changes:          allChanges,
     }),
   ]);
 
@@ -648,6 +694,28 @@ exports.syncDeadlines = onRequest({ timeoutSeconds: 540, memory: '512MiB', secre
       });
     }
   }
+});
+
+// ── ONE-TIME: RENAME PROJECT DOCS (delete after use) ─────────────────────────
+exports.renameProject = onRequest({ secrets: ['SLACK_BOT_TOKEN'] }, async (req, res) => {
+  const oldName = req.query.from;
+  const newName = req.query.to;
+  if (!oldName || !newName) return res.status(400).json({ error: 'Requires ?from=OldName&to=NewName' });
+  const snap = await db.collection('deadlines').where('project', '==', oldName).get();
+  const batch = db.batch();
+  snap.docs.forEach(doc => batch.delete(doc.ref));
+  batch.delete(db.collection('projects').doc(oldName));
+  await batch.commit();
+  res.json({ ok: true, deleted: snap.size, message: `Deleted ${snap.size} "${oldName}" docs — run /sync-deadlines to repopulate as "${newName}"` });
+});
+
+// ── ONE-TIME: FORCE FULL RESYNC (delete after use) ───────────────────────────
+exports.clearMassInsight = onRequest({ secrets: ['SLACK_BOT_TOKEN'] }, async (req, res) => {
+  const project = req.query.project || 'Mass Insight';
+  await db.collection('projects').doc(project).update({
+    canvasUpdatedAt: admin.firestore.FieldValue.delete(),
+  });
+  res.json({ ok: true, message: `${project} canvasUpdatedAt cleared — run /sync-deadlines now` });
 });
 
 // ── NIGHTLY SCHEDULED SYNC ────────────────────────────────────────────────────
