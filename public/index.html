@@ -806,6 +806,9 @@
   .team-pill.led-account  { background: #ffe2d0; color: #4a1a00; }
   .team-pill.led-client   { background: #e8e4ff; color: #1a0857; }
   .team-pill.led-pm       { background: #d0f0e0; color: #063d22; }
+  .team-pill.led-contractor { background: var(--hatTrick); color: #1a0857; }
+  /* Contractor pill only appears in budget view */
+  body:not(.budget-active) .team-pill.led-contractor { display: none !important; }
 
 
 
@@ -1209,11 +1212,24 @@
   .budget-col-pill.strat  { background: var(--hype);     color: #4a1a00; }
   .budget-col-pill.design { background: var(--hotsauce); color: var(--horchata); }
 
-  /* Cell tint when a pill is active */
-  .budget-col-am.active     { background: rgba(255,213,73,0.18); }
-  .budget-col-pm.active     { background: rgba(124,221,242,0.22); }
-  .budget-col-strat.active  { background: rgba(255,183,153,0.25); }
-  .budget-col-design.active { background: rgba(255,77,0,0.13); }
+  /* Role filtering: when the table has filter-X applied, hide the other three role columns */
+  .budget-table.filter-am    .budget-col-pm,
+  .budget-table.filter-am    .budget-col-strat,
+  .budget-table.filter-am    .budget-col-design { display: none; }
+  .budget-table.filter-pm    .budget-col-am,
+  .budget-table.filter-pm    .budget-col-strat,
+  .budget-table.filter-pm    .budget-col-design { display: none; }
+  .budget-table.filter-strat .budget-col-am,
+  .budget-table.filter-strat .budget-col-pm,
+  .budget-table.filter-strat .budget-col-design { display: none; }
+  .budget-table.filter-design .budget-col-am,
+  .budget-table.filter-design .budget-col-pm,
+  .budget-table.filter-design .budget-col-strat { display: none; }
+  /* Contractor filter: hide all four role columns, leaving Project + Contractor Budget */
+  .budget-table.filter-contractor .budget-col-am,
+  .budget-table.filter-contractor .budget-col-pm,
+  .budget-table.filter-contractor .budget-col-strat,
+  .budget-table.filter-contractor .budget-col-design { display: none; }
 
   /* Narrow numeric hour columns — keep them tight since values are 3-digit max */
   .budget-table th.budget-col-am,     .budget-table td.budget-col-am,
@@ -1356,6 +1372,7 @@
     <button class="team-pill led-account" data-led="Account Management">AM</button>
     <button class="team-pill led-pm" data-led="PM">PM</button>
     <button class="team-pill led-client" data-led="Client">Client</button>
+    <button class="team-pill led-contractor" data-led="Contractor">Contractor</button>
   </div>
 </div>
 
@@ -2369,7 +2386,8 @@ const LED_TO_BUDGET_COL = {
   'Creative':           'design',
   'Strategy':           'strat',
   'Account Management': 'am',
-  'PM':                 'pm'
+  'PM':                 'pm',
+  'Contractor':         'contractor'
   // 'Content Strategy' (UX Strat) and 'Client' have no budget column — no-op when active
 };
 
@@ -2419,8 +2437,9 @@ function renderBudget() {
   document.getElementById('month-nav-bar').style.display = 'none';
 
   const activeCol = LED_TO_BUDGET_COL[activeLed] || null;
-  const colCls = col => `num budget-col-${col}` + (activeCol === col ? ' active' : '');
-  const hourCls = col => 'budget-hour' + (activeCol && activeCol !== col ? ' dim' : '');
+  const tableCls = 'budget-table' + (activeCol ? ' filter-' + activeCol : '');
+  const colCls = col => `num budget-col-${col}`;
+  const hourCls = () => 'budget-hour';
 
   const filtered = getFilteredBudgets();
 
@@ -2477,7 +2496,7 @@ function renderBudget() {
     <h2 class="month-header">Project Budgets <span class="month-count"><span class="result-count">${filtered.length}</span> project${filtered.length !== 1 ? 's' : ''}</span></h2>
     <div class="budget-view-sub">Allocated hours by role + contractor budget. ⚠ flags projects where role-sum differs from P&amp;L aggregate.</div>
     <div class="budget-table-wrap">
-      <table class="budget-table">
+      <table class="${tableCls}">
         <thead>
           <tr>
             <th>Project</th>
