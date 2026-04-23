@@ -1195,9 +1195,12 @@
   }
   .budget-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
   .budget-table td:last-child { border-right: none; }
-  /* Project cell — uses existing .project-tag pill style. min-width only so it can flex with hidden columns. */
+  /* Project cell — uses existing .project-tag pill style. Wider than the hour columns. */
   .budget-table th:first-child,
-  .budget-table td:first-child { min-width: 200px; padding-right: 16px; }
+  .budget-table td:first-child { min-width: 220px; padding-right: 16px; }
+  /* Contractor Budget — widest column, room for the breakdown list */
+  .budget-table th.budget-col-contractor,
+  .budget-table td.budget-col-contractor { min-width: 280px; }
   .budget-hour { font-variant-numeric: tabular-nums; font-weight: 500; color: var(--hubble); }
 
   /* Column header pills — styled like .team-pill for visual consistency */
@@ -1251,11 +1254,12 @@
     letter-spacing: 0;
   }
 
-  /* Numeric hour columns — min-width only so remaining cells can flex when siblings are hidden */
+  /* Numeric hour columns — identical width so all four match, narrower than Project/Contractor */
   .budget-table th.budget-col-am,     .budget-table td.budget-col-am,
   .budget-table th.budget-col-pm,     .budget-table td.budget-col-pm,
   .budget-table th.budget-col-strat,  .budget-table td.budget-col-strat,
   .budget-table th.budget-col-design, .budget-table td.budget-col-design {
+    width: 120px;
     min-width: 120px;
   }
 
