@@ -1181,18 +1181,22 @@
     padding: 10px 12px;
     white-space: nowrap;
     background: var(--hubble);
+    border-right: 1px solid rgba(255,252,241,0.15);
   }
   .budget-table th.num { text-align: right; }
+  .budget-table th:last-child { border-right: none; }
   .budget-table td {
-    padding: 14px 10px;
+    padding: 14px 12px;
     border-bottom: 1px solid var(--border);
+    border-right: 1px solid var(--border);
     vertical-align: top;
   }
   .budget-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
-  /* Project cell — uses existing .project-tag pill style for consistency with other views */
-  .budget-table td:first-child { min-width: 120px; padding-right: 16px; }
+  .budget-table td:last-child { border-right: none; }
+  /* Project cell — uses existing .project-tag pill style. Give it extra width since it carries the main label. */
+  .budget-table th:first-child,
+  .budget-table td:first-child { min-width: 200px; width: 200px; padding-right: 16px; }
   .budget-hour { font-variant-numeric: tabular-nums; font-weight: 500; color: var(--hubble); }
-  .budget-hour.dim { opacity: 0.3; }
 
   /* Column header pills — styled like .team-pill for visual consistency */
   .budget-col-pill {
@@ -1207,10 +1211,11 @@
     line-height: 1.6;
     text-transform: none;
   }
-  .budget-col-pill.am     { background: var(--honey);    color: #4a3a00; }
-  .budget-col-pill.pm     { background: var(--havana);   color: #0a3040; }
-  .budget-col-pill.strat  { background: var(--hype);     color: #4a1a00; }
-  .budget-col-pill.design { background: var(--hotsauce); color: var(--horchata); }
+  /* Match the nav pill colors exactly (same as .team-pill.led-* in the top nav) */
+  .budget-col-pill.am     { background: #ffe2d0; color: #4a1a00; } /* = .led-account */
+  .budget-col-pill.pm     { background: #d0f0e0; color: #063d22; } /* = .led-pm */
+  .budget-col-pill.strat  { background: #e5fb9e; color: #283800; } /* = .led-strategy */
+  .budget-col-pill.design { background: #c8f4ff; color: #07364a; } /* = .led-creative */
 
   /* Role filtering: when the table has filter-X applied, hide the other three role columns */
   .budget-table.filter-am    .budget-col-pm,
@@ -1231,13 +1236,13 @@
   .budget-table.filter-contractor .budget-col-strat,
   .budget-table.filter-contractor .budget-col-design { display: none; }
 
-  /* Narrow numeric hour columns — keep them tight since values are 3-digit max */
+  /* Numeric hour columns — sized for 3-digit values plus comfortable padding */
   .budget-table th.budget-col-am,     .budget-table td.budget-col-am,
   .budget-table th.budget-col-pm,     .budget-table td.budget-col-pm,
   .budget-table th.budget-col-strat,  .budget-table td.budget-col-strat,
   .budget-table th.budget-col-design, .budget-table td.budget-col-design {
-    width: 64px;
-    min-width: 64px;
+    width: 88px;
+    min-width: 88px;
   }
 
   /* Contractor breakdown */
