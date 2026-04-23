@@ -1144,6 +1144,144 @@
     z-index: 2000;
   }
   .gantt-tooltip.visible { opacity: 1; }
+
+  /* ── BUDGET VIEW ────────────────────────────────── */
+  .budget-mode { padding: 24px 20px 80px; max-width: 1400px; margin: 0 auto; }
+  .budget-view-heading {
+    font-family: var(--font-display);
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: var(--hubble);
+    margin-bottom: 4px;
+  }
+  .budget-view-sub {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 20px;
+  }
+  .budget-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    background: var(--horchata);
+  }
+  .budget-table th {
+    font-family: var(--font-display);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    text-align: left;
+    padding: 10px 10px;
+    border-bottom: 1px solid var(--border-mid);
+    white-space: nowrap;
+    background: var(--horchata);
+    position: sticky;
+    top: 0;
+    z-index: 2;
+  }
+  .budget-table th.num { text-align: right; }
+  .budget-table td {
+    padding: 14px 10px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  .budget-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .budget-prefix {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-bottom: 3px;
+  }
+  .budget-project { font-weight: 600; color: var(--hubble); line-height: 1.25; }
+  .budget-client { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+  .budget-hour { font-variant-numeric: tabular-nums; font-weight: 500; color: var(--hubble); }
+  .budget-hour.dim { opacity: 0.3; }
+
+  /* Column header swatches */
+  .budget-swatch {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    vertical-align: middle;
+    margin-right: 6px;
+    transform: translateY(-1px);
+  }
+  .swatch-am     { background: var(--honey); }
+  .swatch-pm     { background: var(--havana); }
+  .swatch-strat  { background: var(--hype); }
+  .swatch-design { background: var(--hotsauce); }
+
+  /* Cell tint when a pill is active */
+  .budget-col-am.active     { background: rgba(255,213,73,0.18); }
+  .budget-col-pm.active     { background: rgba(124,221,242,0.22); }
+  .budget-col-strat.active  { background: rgba(255,183,153,0.25); }
+  .budget-col-design.active { background: rgba(255,77,0,0.13); }
+
+  /* Contractor breakdown */
+  .budget-contractor-total { font-weight: 700; color: var(--hubble); font-variant-numeric: tabular-nums; font-size: 14px; }
+  .budget-contractor-list { margin-top: 6px; font-size: 12px; list-style: none; }
+  .budget-contractor-list li {
+    color: rgba(15,4,80,0.75);
+    line-height: 1.5;
+    display: flex;
+    gap: 8px;
+  }
+  .budget-contractor-list li .amount {
+    font-variant-numeric: tabular-nums;
+    color: var(--hubble);
+    font-weight: 600;
+    min-width: 52px;
+    display: inline-block;
+  }
+  .budget-contractor-empty {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 4px;
+    font-style: italic;
+  }
+  .budget-flag {
+    display: inline-block;
+    margin-left: 4px;
+    color: #c9812f;
+    cursor: help;
+    font-size: 11px;
+  }
+
+  /* Totals rows */
+  .budget-totals-row td {
+    border-top: 2px solid var(--hubble);
+    border-bottom: none;
+    padding-top: 14px;
+    font-family: var(--font-display);
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: var(--hubble);
+  }
+  .budget-cost-row td {
+    font-size: 11px;
+    color: var(--text-muted);
+    border-bottom: none;
+    padding: 4px 10px 14px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Hidden view: hide the view-toggle entirely */
+  body.budget-active .view-toggle { display: none !important; }
+
+  /* Responsive — allow horizontal scroll on narrow screens */
+  @media (max-width: 900px) {
+    .budget-mode { padding: 16px 12px 60px; overflow-x: auto; }
+    .budget-table { min-width: 780px; }
+  }
 </style>
 </head>
 <body>
@@ -1515,6 +1653,88 @@ let UPDATE_LOG = [
   }
 ];
 
+// ── BUDGET DATA ──────────────────────────────────────────────────────────────
+// Active project budgets extracted from Planning & Closing docs.
+// Phase 1: hardcoded. Phase 2 will sync from Drive via a Cloud Function.
+const INTERNAL_RATE = 160; // $/hr — Hyperakt internal cost rate (not client billing rate)
+const PROJECT_BUDGETS = [
+  { prefix:"CLUA",  client:"Climate and Land Use Alliance",      project:"CLUA & FPC Branding",
+    hours:{am:83, pm:165, strat:373, design:204},
+    contractors:{ total:18500, breakdownSum:19500, discrepancy:true, breakdown:[
+      { role:"Designer 1",            amount:10000 },
+      { role:"Designer 2",            amount:5500 },
+      { role:"Namers",                amount:3000 },
+      { role:"Animator",              amount:500 },
+      { role:"Lawyer",                amount:500 }
+    ] } },
+  { prefix:"CLI",   client:"Climate Leadership Initiative",       project:"CL Pitch Deck",
+    hours:{am:10, pm:0, strat:27, design:16},
+    contractors:{ total:500, breakdownSum:500, discrepancy:false, breakdown:[
+      { role:"Designer",              amount:500 }
+    ] } },
+  { prefix:"EFSC",  client:"Education Foundation of Sarasota County", project:"EFSC Renaming & Rebranding",
+    hours:{am:43, pm:85, strat:180, design:118},
+    contractors:{ total:12000, breakdownSum:12000, discrepancy:false, breakdown:[
+      { role:"Designer",              amount:10000 },
+      { role:"Namer",                 amount:2000 }
+    ] } },
+  { prefix:"FP",    client:"Founders Pledge",                    project:"Philanthropy Partnerships Branding",
+    hours:{am:0, pm:41, strat:144, design:21},
+    contractors:{ total:0, breakdownSum:0, discrepancy:false, breakdown:[] } },
+  { prefix:"JVS",   client:"JVS SoCal",                          project:"JVS Rebranding",
+    hours:{am:29, pm:59, strat:117, design:89},
+    contractors:{ total:5000, breakdownSum:5000, discrepancy:false, breakdown:[
+      { role:"Designer",              amount:5000 }
+    ] } },
+  { prefix:"MACP",  client:"Margaret A. Cargill Philanthropies", project:"Verbal Brand Expansion 2026",
+    hours:{am:0, pm:51, strat:177, design:25},
+    contractors:{ total:500, breakdownSum:500, discrepancy:false, breakdown:[
+      { role:"Designer",              amount:500 }
+    ] } },
+  { prefix:"MI",    client:"Mass Insight Education & Research",  project:"MI Rebranding",
+    hours:{am:53, pm:70, strat:137, design:123},
+    contractors:{ total:10500, breakdownSum:11000, discrepancy:true, breakdown:[
+      { role:"Lupa",                  amount:8000 },
+      { role:"Lupa CO#2",             amount:2000 },
+      { role:"Beyond the Surface (PPT)", amount:500 },
+      { role:"Trademark CO",          amount:500 }
+    ] } },
+  { prefix:"MNMF",  client:"Museum of New Mexico Foundation",    project:"MNMF Rebranding",
+    hours:{am:90, pm:150, strat:118, design:142},
+    contractors:{ total:38050, breakdownSum:55010, discrepancy:true, breakdown:[
+      { role:"Bistro Dev",            amount:20000 },
+      { role:"Lupa",                  amount:15000 },
+      { role:"Strategy CO#1",         amount:8960 },
+      { role:"UX/Content",            amount:8000 },
+      { role:"Travel",                amount:3050 }
+    ] } },
+  { prefix:"PRYSM", client:"Prysm Initiative",                   project:"Website & Additional Assets",
+    hours:{am:14, pm:114, strat:0, design:151},
+    contractors:{ total:13000, breakdownSum:13000, discrepancy:false, breakdown:[
+      { role:"Lupa (UX+Dev)",         amount:10000 },
+      { role:"Icon Designer",         amount:3000 }
+    ] } },
+  { prefix:"RWJF",  client:"Robert Wood Johnson Foundation",     project:"Design Support 2025",
+    hours:{am:20, pm:40, strat:0, design:40},
+    contractors:{ total:10000, breakdownSum:10000, discrepancy:false, breakdown:[
+      { role:"Designer",              amount:10000 }
+    ] } },
+  { prefix:"SAAF",  client:"San Antonio Area Foundation",        project:"SAAF Rebranding",
+    hours:{am:95, pm:118, strat:225, design:271},
+    contractors:{ total:10500, breakdownSum:12500, discrepancy:true, breakdown:[
+      { role:"Branding",              amount:10000 },
+      { role:"MS Office Designer",    amount:2000 },
+      { role:"Animator",              amount:500 }
+    ] } },
+  { prefix:"TFA",   client:"Teach For America",                  project:"Teach Michigan Brand Refresh",
+    hours:{am:56, pm:102, strat:317, design:88},
+    contractors:{ total:16000, breakdownSum:16000, discrepancy:false, breakdown:[
+      { role:"UX/UI",                 amount:8000 },
+      { role:"Decks",                 amount:5000 },
+      { role:"Report Designer",       amount:3000 }
+    ] } }
+];
+
 const MONTH_ORDER = ["April","May","June","July","August","September","Oct–Dec"];
 const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const MONTH_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
@@ -1671,6 +1891,8 @@ function getFiltered() {
 }
 
 function populateDropdowns() {
+  // Budget view uses its own dropdown population — don't override it during live data updates
+  if (currentView === 'budget') { populateBudgetDropdown(); return; }
   const clients = [...new Set(RAW.map(r => r.project))].sort();
   const cSel = document.getElementById('filter-client');
   const current = cSel.value;
@@ -2049,6 +2271,7 @@ function render() {
   if (currentView === 'list')        renderList();
   else if (currentView === 'cal')    renderCal();
   else if (currentView === 'gantt')  renderGantt();
+  else if (currentView === 'budget') renderBudget();
   else                               renderNotes();
 }
 
@@ -2134,6 +2357,140 @@ function renderNotes() {
     <h2 class="notes-view-heading">Log</h2>
     ${logHtml}
   </div>`;
+}
+
+// ── BUDGET VIEW ───────────────────────────────────────────────────────────────
+// Hidden view activated via `#budget` hash.
+// Shows project-level role allocations + contractor breakdown.
+const LED_TO_BUDGET_COL = {
+  'Creative':           'design',
+  'Strategy':           'strat',
+  'Account Management': 'am',
+  'PM':                 'pm'
+  // 'Content Strategy' (UX Strat) and 'Client' have no budget column — no-op when active
+};
+
+function fmtMoney(n) {
+  if (n === 0) return '$0';
+  if (n >= 1000) {
+    const k = n / 1000;
+    const str = k % 1 === 0 ? k.toFixed(0) : k.toFixed(2).replace(/\.?0+$/, '');
+    return '$' + str + 'K';
+  }
+  return '$' + n;
+}
+
+function getFilteredBudgets() {
+  const q      = document.getElementById('search').value.toLowerCase().trim();
+  const client = document.getElementById('filter-client').value;
+  return PROJECT_BUDGETS.filter(b => {
+    if (client && b.prefix !== client) return false;
+    if (q) {
+      const roles = b.contractors.breakdown.map(c => c.role).join(' ');
+      const hay = [b.prefix, b.project, b.client, roles].join(' ').toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+}
+
+function populateBudgetDropdown() {
+  const cSel = document.getElementById('filter-client');
+  const current = cSel.value;
+  cSel.innerHTML = '<option value="">All projects</option>';
+  PROJECT_BUDGETS.forEach(b => {
+    const o = document.createElement('option');
+    o.value = b.prefix;
+    o.textContent = b.prefix + ' — ' + b.project;
+    cSel.appendChild(o);
+  });
+  // Restore selection if it exists in the new list
+  if (current && [...cSel.options].find(o => o.value === current)) cSel.value = current;
+}
+
+function renderBudget() {
+  const main = document.getElementById('main-content');
+  main.className = 'budget-mode';
+  document.getElementById('month-nav-bar').style.display = 'none';
+
+  const activeCol = LED_TO_BUDGET_COL[activeLed] || null;
+  const colCls = col => `num budget-col-${col}` + (activeCol === col ? ' active' : '');
+  const hourCls = col => 'budget-hour' + (activeCol && activeCol !== col ? ' dim' : '');
+
+  const filtered = getFilteredBudgets();
+
+  const totals = { am:0, pm:0, strat:0, design:0, contractor:0 };
+  filtered.forEach(b => {
+    totals.am       += b.hours.am;
+    totals.pm       += b.hours.pm;
+    totals.strat    += b.hours.strat;
+    totals.design   += b.hours.design;
+    totals.contractor += b.contractors.total;
+  });
+
+  const rows = filtered.map(b => {
+    const discFlag = b.contractors.discrepancy
+      ? `<span class="budget-flag" title="Role breakdown sums to ${fmtMoney(b.contractors.breakdownSum)} — differs from P&amp;L aggregate">⚠</span>`
+      : '';
+    const breakdownHtml = b.contractors.breakdown.length
+      ? `<ul class="budget-contractor-list">${b.contractors.breakdown.map(c =>
+          `<li><span class="amount">${fmtMoney(c.amount)}</span><span>${c.role}</span></li>`
+        ).join('')}</ul>`
+      : `<div class="budget-contractor-empty">— all in-house</div>`;
+    return `<tr>
+      <td>
+        <div class="budget-prefix">${b.prefix}</div>
+        <div class="budget-project">${b.project}</div>
+        <div class="budget-client">${b.client}</div>
+      </td>
+      <td class="${colCls('am')}"><span class="${hourCls('am')}">${b.hours.am}</span></td>
+      <td class="${colCls('pm')}"><span class="${hourCls('pm')}">${b.hours.pm}</span></td>
+      <td class="${colCls('strat')}"><span class="${hourCls('strat')}">${b.hours.strat}</span></td>
+      <td class="${colCls('design')}"><span class="${hourCls('design')}">${b.hours.design}</span></td>
+      <td>
+        <div class="budget-contractor-total">${fmtMoney(b.contractors.total)}${discFlag}</div>
+        ${breakdownHtml}
+      </td>
+    </tr>`;
+  }).join('');
+
+  const totalsRow = `
+    <tr class="budget-totals-row">
+      <td>Total hours</td>
+      <td class="num">${totals.am}</td>
+      <td class="num">${totals.pm}</td>
+      <td class="num">${totals.strat}</td>
+      <td class="num">${totals.design}</td>
+      <td>${fmtMoney(totals.contractor)}</td>
+    </tr>
+    <tr class="budget-cost-row">
+      <td>Internal cost @ $${INTERNAL_RATE}/hr</td>
+      <td class="num">${fmtMoney(totals.am * INTERNAL_RATE)}</td>
+      <td class="num">${fmtMoney(totals.pm * INTERNAL_RATE)}</td>
+      <td class="num">${fmtMoney(totals.strat * INTERNAL_RATE)}</td>
+      <td class="num">${fmtMoney(totals.design * INTERNAL_RATE)}</td>
+      <td></td>
+    </tr>`;
+
+  main.innerHTML = `
+    <h2 class="budget-view-heading">Project Budgets</h2>
+    <div class="budget-view-sub">Active client projects — allocated hours by role + contractor budget. ⚠ flags projects where role-sum differs from P&amp;L aggregate.</div>
+    <table class="budget-table">
+      <thead>
+        <tr>
+          <th>Project</th>
+          <th class="num"><span class="budget-swatch swatch-am"></span>AM</th>
+          <th class="num"><span class="budget-swatch swatch-pm"></span>PM</th>
+          <th class="num"><span class="budget-swatch swatch-strat"></span>Strat</th>
+          <th class="num"><span class="budget-swatch swatch-design"></span>Design</th>
+          <th>Contractor Budget</th>
+        </tr>
+      </thead>
+      <tbody>${rows}${totalsRow}</tbody>
+    </table>`;
+
+  document.getElementById('result-text').innerHTML =
+    `<span class="result-count">${filtered.length}</span> project${filtered.length !== 1 ? 's' : ''}`;
 }
 
 // ── GANTT VIEW ────────────────────────────────────────────────────────────────
@@ -2292,7 +2649,27 @@ function showControls(show) {
   // Month nav handled per-render
 }
 
+// Any deadline view click exits budget mode and restores normal UI state
+function exitBudgetIfActive() {
+  if (currentView !== 'budget') return;
+  document.body.classList.remove('budget-active');
+  // Clear filter state so stale budget-specific values don't leak into deadline views
+  document.getElementById('search').value = '';
+  document.getElementById('filter-client').value = '';
+  // Clear the #budget hash silently (no hashchange event fires for same-state replace)
+  if (location.hash === '#budget') {
+    history.replaceState(null, '', location.pathname + location.search);
+  }
+  // currentView is set by the caller immediately after; populateDropdowns will run on next data tick
+  // but also restore now for immediate correctness:
+  const clients = [...new Set(RAW.map(r => r.project))].sort();
+  const cSel = document.getElementById('filter-client');
+  cSel.innerHTML = '<option value="">All projects</option>';
+  clients.forEach(c => { const o = document.createElement('option'); o.value = c; o.textContent = c; cSel.appendChild(o); });
+}
+
 document.getElementById('btn-list').addEventListener('click', () => {
+  exitBudgetIfActive();
   currentView = 'list';
   setActiveBtn('btn-list');
   showControls(true);
@@ -2300,6 +2677,7 @@ document.getElementById('btn-list').addEventListener('click', () => {
   render();
 });
 document.getElementById('btn-cal').addEventListener('click', () => {
+  exitBudgetIfActive();
   currentView = 'cal';
   setActiveBtn('btn-cal');
   showControls(true);
@@ -2307,12 +2685,14 @@ document.getElementById('btn-cal').addEventListener('click', () => {
   render();
 });
 document.getElementById('btn-notes').addEventListener('click', () => {
+  exitBudgetIfActive();
   currentView = 'notes';
   setActiveBtn('btn-notes');
   showControls(false);
   render();
 });
 document.getElementById('btn-gantt').addEventListener('click', () => {
+  exitBudgetIfActive();
   currentView = 'gantt';
   setActiveBtn('btn-gantt');
   showControls(true);
@@ -2348,6 +2728,45 @@ document.getElementById('clear-btn').addEventListener('click', () => {
 });
 
 window.addEventListener('resize', setMonthNavTop);
+
+// ── BUDGET: HIDDEN ROUTE ACTIVATION ──────────────────────────────────────────
+function enterBudget() {
+  currentView = 'budget';
+  document.body.classList.add('budget-active');
+  calState.selectedDay = null; calState.selectedMonth = null;
+  // Reset filter state so leftover deadline values don't confuse the budget view
+  document.getElementById('search').value = '';
+  showControls(true);
+  document.getElementById('month-nav-bar').style.display = 'none';
+  populateBudgetDropdown();
+  // Clear active pill UI — user can re-pick one to filter columns
+  activeLed = '';
+  document.querySelectorAll('.team-pill').forEach(p => p.classList.remove('active'));
+  const allPill = document.querySelector('.team-pill.all-pill');
+  if (allPill) allPill.classList.add('active');
+  render();
+}
+
+function checkBudgetHash() {
+  if (location.hash === '#budget' && currentView !== 'budget') {
+    enterBudget();
+  }
+}
+
+window.addEventListener('hashchange', () => {
+  if (location.hash === '#budget') {
+    if (currentView !== 'budget') enterBudget();
+  } else if (currentView === 'budget') {
+    // Hash removed while in budget — fall back to list
+    document.body.classList.remove('budget-active');
+    currentView = 'list';
+    setActiveBtn('btn-list');
+    populateDropdowns();
+    showControls(true);
+    document.getElementById('month-nav-bar').style.display = '';
+    render();
+  }
+});
 
 // ── FIREBASE INIT ─────────────────────────────────────────────────────────────
 const firebaseConfig = {
@@ -2433,6 +2852,7 @@ _auth.onAuthStateChanged(user => {
   if (user && user.email && user.email.endsWith('@hyperakt.com')) {
     document.getElementById('login-overlay').style.display = 'none';
     loadData();
+    checkBudgetHash(); // activate budget view if URL hash is #budget
   } else {
     if (user) _auth.signOut(); // wrong domain
     document.getElementById('login-overlay').style.display = 'flex';
