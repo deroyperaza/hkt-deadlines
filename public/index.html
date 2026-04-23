@@ -1170,6 +1170,8 @@
     font-size: 13px;
     background: #fff;
   }
+  /* Navy bar on the thead row itself — guarantees full-width header even when some columns are hidden */
+  .budget-table thead tr { background: var(--hubble); }
   .budget-table th {
     font-family: var(--font-display);
     font-size: 11px;
@@ -1193,9 +1195,9 @@
   }
   .budget-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
   .budget-table td:last-child { border-right: none; }
-  /* Project cell — uses existing .project-tag pill style. Give it extra width since it carries the main label. */
+  /* Project cell — uses existing .project-tag pill style. min-width only so it can flex with hidden columns. */
   .budget-table th:first-child,
-  .budget-table td:first-child { min-width: 200px; width: 200px; padding-right: 16px; }
+  .budget-table td:first-child { min-width: 200px; padding-right: 16px; }
   .budget-hour { font-variant-numeric: tabular-nums; font-weight: 500; color: var(--hubble); }
 
   /* Column header pills — styled like .team-pill for visual consistency */
@@ -1217,32 +1219,44 @@
   .budget-col-pill.strat  { background: #e5fb9e; color: #283800; } /* = .led-strategy */
   .budget-col-pill.design { background: #c8f4ff; color: #07364a; } /* = .led-creative */
 
-  /* Role filtering: when the table has filter-X applied, hide the other three role columns */
+  /* Role filtering: show only the matching role's column; hide all other role cols AND Contractor col */
   .budget-table.filter-am    .budget-col-pm,
   .budget-table.filter-am    .budget-col-strat,
-  .budget-table.filter-am    .budget-col-design { display: none; }
+  .budget-table.filter-am    .budget-col-design,
+  .budget-table.filter-am    .budget-col-contractor { display: none; }
   .budget-table.filter-pm    .budget-col-am,
   .budget-table.filter-pm    .budget-col-strat,
-  .budget-table.filter-pm    .budget-col-design { display: none; }
+  .budget-table.filter-pm    .budget-col-design,
+  .budget-table.filter-pm    .budget-col-contractor { display: none; }
   .budget-table.filter-strat .budget-col-am,
   .budget-table.filter-strat .budget-col-pm,
-  .budget-table.filter-strat .budget-col-design { display: none; }
+  .budget-table.filter-strat .budget-col-design,
+  .budget-table.filter-strat .budget-col-contractor { display: none; }
   .budget-table.filter-design .budget-col-am,
   .budget-table.filter-design .budget-col-pm,
-  .budget-table.filter-design .budget-col-strat { display: none; }
+  .budget-table.filter-design .budget-col-strat,
+  .budget-table.filter-design .budget-col-contractor { display: none; }
   /* Contractor filter: hide all four role columns, leaving Project + Contractor Budget */
   .budget-table.filter-contractor .budget-col-am,
   .budget-table.filter-contractor .budget-col-pm,
   .budget-table.filter-contractor .budget-col-strat,
   .budget-table.filter-contractor .budget-col-design { display: none; }
 
-  /* Numeric hour columns — sized for 3-digit values plus comfortable padding */
+  /* "hours" unit label — smaller, muted, sits next to the number */
+  .budget-hour-unit {
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-left: 2px;
+    font-weight: normal;
+    letter-spacing: 0;
+  }
+
+  /* Numeric hour columns — min-width only so remaining cells can flex when siblings are hidden */
   .budget-table th.budget-col-am,     .budget-table td.budget-col-am,
   .budget-table th.budget-col-pm,     .budget-table td.budget-col-pm,
   .budget-table th.budget-col-strat,  .budget-table td.budget-col-strat,
   .budget-table th.budget-col-design, .budget-table td.budget-col-design {
-    width: 88px;
-    min-width: 88px;
+    min-width: 120px;
   }
 
   /* Contractor breakdown */
@@ -2471,35 +2485,37 @@ function renderBudget() {
           `<li><span class="amount">${fmtMoney(c.amount)}</span><span>${c.role}</span></li>`
         ).join('')}</ul>`
       : `<div class="budget-contractor-empty">— all in-house</div>`;
+    const hrs = n => `<span class="budget-hour">${n}</span><span class="budget-hour-unit">hours</span>`;
     return `<tr>
       <td><span class="project-tag">${b.prefix}</span></td>
-      <td class="${colCls('am')}"><span class="${hourCls('am')}">${b.hours.am}</span></td>
-      <td class="${colCls('pm')}"><span class="${hourCls('pm')}">${b.hours.pm}</span></td>
-      <td class="${colCls('strat')}"><span class="${hourCls('strat')}">${b.hours.strat}</span></td>
-      <td class="${colCls('design')}"><span class="${hourCls('design')}">${b.hours.design}</span></td>
-      <td>
+      <td class="${colCls('am')}">${hrs(b.hours.am)}</td>
+      <td class="${colCls('pm')}">${hrs(b.hours.pm)}</td>
+      <td class="${colCls('strat')}">${hrs(b.hours.strat)}</td>
+      <td class="${colCls('design')}">${hrs(b.hours.design)}</td>
+      <td class="budget-col-contractor">
         <div class="budget-contractor-total">${fmtMoney(b.contractors.total)}${discFlag}</div>
         ${breakdownHtml}
       </td>
     </tr>`;
   }).join('');
 
+  const hrs = n => `<span class="budget-hour">${n.toLocaleString()}</span><span class="budget-hour-unit">hours</span>`;
   const totalsRow = `
     <tr class="budget-totals-row">
-      <td>Total hours</td>
-      <td class="num">${totals.am}</td>
-      <td class="num">${totals.pm}</td>
-      <td class="num">${totals.strat}</td>
-      <td class="num">${totals.design}</td>
-      <td>${fmtMoney(totals.contractor)}</td>
+      <td>Total</td>
+      <td class="num budget-col-am">${hrs(totals.am)}</td>
+      <td class="num budget-col-pm">${hrs(totals.pm)}</td>
+      <td class="num budget-col-strat">${hrs(totals.strat)}</td>
+      <td class="num budget-col-design">${hrs(totals.design)}</td>
+      <td class="budget-col-contractor">${fmtMoney(totals.contractor)}</td>
     </tr>
     <tr class="budget-cost-row">
       <td>Internal cost @ $${INTERNAL_RATE}/hr</td>
-      <td class="num">${fmtMoney(totals.am * INTERNAL_RATE)}</td>
-      <td class="num">${fmtMoney(totals.pm * INTERNAL_RATE)}</td>
-      <td class="num">${fmtMoney(totals.strat * INTERNAL_RATE)}</td>
-      <td class="num">${fmtMoney(totals.design * INTERNAL_RATE)}</td>
-      <td></td>
+      <td class="num budget-col-am">${fmtMoney(totals.am * INTERNAL_RATE)}</td>
+      <td class="num budget-col-pm">${fmtMoney(totals.pm * INTERNAL_RATE)}</td>
+      <td class="num budget-col-strat">${fmtMoney(totals.strat * INTERNAL_RATE)}</td>
+      <td class="num budget-col-design">${fmtMoney(totals.design * INTERNAL_RATE)}</td>
+      <td class="budget-col-contractor"></td>
     </tr>`;
 
   main.innerHTML = `
@@ -2514,7 +2530,7 @@ function renderBudget() {
             <th class="num budget-col-pm"><span class="budget-col-pill pm">PM</span></th>
             <th class="num budget-col-strat"><span class="budget-col-pill strat">Strat</span></th>
             <th class="num budget-col-design"><span class="budget-col-pill design">Design</span></th>
-            <th>Contractor Budget</th>
+            <th class="budget-col-contractor">Contractor Budget</th>
           </tr>
         </thead>
         <tbody>${rows}${totalsRow}</tbody>
