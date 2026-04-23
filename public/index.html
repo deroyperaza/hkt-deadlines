@@ -1683,6 +1683,11 @@ let UPDATE_LOG = [
 // Phase 1: hardcoded. Phase 2 will sync from Drive via a Cloud Function.
 const INTERNAL_RATE = 160; // $/hr — Hyperakt internal cost rate (not client billing rate)
 const PROJECT_BUDGETS = [
+  { prefix:"CHCF 30", client:"California Health Care Foundation", project:"CHCF 30th Anniversary Branding",
+    hours:{am:0, pm:8, strat:0, design:30},
+    contractors:{ total:2000, breakdownSum:2000, discrepancy:false, breakdown:[
+      { role:"Brand Designer (Genesis)", amount:2000 }
+    ] } },
   { prefix:"CLUA",  client:"Climate and Land Use Alliance",      project:"CLUA & FPC Branding",
     hours:{am:83, pm:165, strat:373, design:204},
     contractors:{ total:18500, breakdownSum:19500, discrepancy:true, breakdown:[
@@ -1716,7 +1721,7 @@ const PROJECT_BUDGETS = [
     contractors:{ total:500, breakdownSum:500, discrepancy:false, breakdown:[
       { role:"Designer",              amount:500 }
     ] } },
-  { prefix:"MI",    client:"Mass Insight Education & Research",  project:"MI Rebranding",
+  { prefix:"Mass Insight", client:"Mass Insight Education & Research",  project:"MI Rebranding",
     hours:{am:53, pm:70, strat:137, design:123},
     contractors:{ total:10500, breakdownSum:11000, discrepancy:true, breakdown:[
       { role:"Lupa",                  amount:8000 },
