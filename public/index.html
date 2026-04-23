@@ -1152,11 +1152,20 @@
     color: var(--text-muted);
     margin: 8px 0 20px;
   }
+  /* Frame the table like the list view — rounded corners, white bg, subtle border */
+  .budget-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin-top: 16px;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+    background: #fff;
+  }
   .budget-table {
     width: 100%;
     border-collapse: collapse;
     font-size: 13px;
-    background: var(--horchata);
+    background: #fff;
   }
   .budget-table th {
     font-family: var(--font-display);
@@ -1164,15 +1173,11 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: var(--text-muted);
+    color: rgba(255,252,241,0.7);
     text-align: left;
-    padding: 10px 10px;
-    border-bottom: 1px solid var(--border-mid);
+    padding: 10px 12px;
     white-space: nowrap;
-    background: var(--horchata);
-    position: sticky;
-    top: 0;
-    z-index: 2;
+    background: var(--hubble);
   }
   .budget-table th.num { text-align: right; }
   .budget-table td {
@@ -1186,26 +1191,38 @@
   .budget-hour { font-variant-numeric: tabular-nums; font-weight: 500; color: var(--hubble); }
   .budget-hour.dim { opacity: 0.3; }
 
-  /* Column header swatches */
-  .budget-swatch {
+  /* Column header pills — styled like .team-pill for visual consistency */
+  .budget-col-pill {
     display: inline-block;
-    width: 10px;
-    height: 10px;
-    border-radius: 2px;
-    vertical-align: middle;
-    margin-right: 6px;
-    transform: translateY(-1px);
+    border: none;
+    border-radius: var(--radius-pill);
+    font-family: var(--font-body);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    padding: 3px 10px;
+    line-height: 1.6;
+    text-transform: none;
   }
-  .swatch-am     { background: var(--honey); }
-  .swatch-pm     { background: var(--havana); }
-  .swatch-strat  { background: var(--hype); }
-  .swatch-design { background: var(--hotsauce); }
+  .budget-col-pill.am     { background: var(--honey);    color: #4a3a00; }
+  .budget-col-pill.pm     { background: var(--havana);   color: #0a3040; }
+  .budget-col-pill.strat  { background: var(--hype);     color: #4a1a00; }
+  .budget-col-pill.design { background: var(--hotsauce); color: var(--horchata); }
 
   /* Cell tint when a pill is active */
   .budget-col-am.active     { background: rgba(255,213,73,0.18); }
   .budget-col-pm.active     { background: rgba(124,221,242,0.22); }
   .budget-col-strat.active  { background: rgba(255,183,153,0.25); }
   .budget-col-design.active { background: rgba(255,77,0,0.13); }
+
+  /* Narrow numeric hour columns — keep them tight since values are 3-digit max */
+  .budget-table th.budget-col-am,     .budget-table td.budget-col-am,
+  .budget-table th.budget-col-pm,     .budget-table td.budget-col-pm,
+  .budget-table th.budget-col-strat,  .budget-table td.budget-col-strat,
+  .budget-table th.budget-col-design, .budget-table td.budget-col-design {
+    width: 64px;
+    min-width: 64px;
+  }
 
   /* Contractor breakdown */
   .budget-contractor-total { font-weight: 700; color: var(--hubble); font-variant-numeric: tabular-nums; font-size: 14px; }
@@ -2459,19 +2476,21 @@ function renderBudget() {
   main.innerHTML = `
     <h2 class="month-header">Project Budgets <span class="month-count"><span class="result-count">${filtered.length}</span> project${filtered.length !== 1 ? 's' : ''}</span></h2>
     <div class="budget-view-sub">Allocated hours by role + contractor budget. ⚠ flags projects where role-sum differs from P&amp;L aggregate.</div>
-    <table class="budget-table">
-      <thead>
-        <tr>
-          <th>Project</th>
-          <th class="num"><span class="budget-swatch swatch-am"></span>AM</th>
-          <th class="num"><span class="budget-swatch swatch-pm"></span>PM</th>
-          <th class="num"><span class="budget-swatch swatch-strat"></span>Strat</th>
-          <th class="num"><span class="budget-swatch swatch-design"></span>Design</th>
-          <th>Contractor Budget</th>
-        </tr>
-      </thead>
-      <tbody>${rows}${totalsRow}</tbody>
-    </table>`;
+    <div class="budget-table-wrap">
+      <table class="budget-table">
+        <thead>
+          <tr>
+            <th>Project</th>
+            <th class="num budget-col-am"><span class="budget-col-pill am">AM</span></th>
+            <th class="num budget-col-pm"><span class="budget-col-pill pm">PM</span></th>
+            <th class="num budget-col-strat"><span class="budget-col-pill strat">Strat</span></th>
+            <th class="num budget-col-design"><span class="budget-col-pill design">Design</span></th>
+            <th>Contractor Budget</th>
+          </tr>
+        </thead>
+        <tbody>${rows}${totalsRow}</tbody>
+      </table>
+    </div>`;
 
   document.getElementById('result-text').innerHTML =
     `<span class="result-count">${filtered.length}</span> project${filtered.length !== 1 ? 's' : ''}`;
