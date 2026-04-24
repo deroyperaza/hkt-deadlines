@@ -1360,10 +1360,30 @@
   body.budget-active .team-pill.led-content,
   body.budget-active .team-pill.led-client { display: none !important; }
 
-  /* Responsive — allow horizontal scroll on narrow screens */
+  /* Responsive — below 900px, let the table scroll horizontally inside its wrap.
+     Sticky thead is disabled on mobile because it can't work inside a scroll container. */
   @media (max-width: 900px) {
-    .budget-mode { padding: 16px 12px 60px; overflow-x: auto; }
-    .budget-table { min-width: 780px; }
+    .budget-mode { padding: 16px 12px 60px; }
+    .budget-table-wrap {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .budget-table thead th { position: static; top: auto; z-index: auto; }
+    /* Tighter column widths to reduce horizontal scroll distance */
+    .budget-table th:first-child,
+    .budget-table td:first-child { min-width: 180px; width: 180px; padding-right: 12px; }
+    .budget-table th.budget-col-am,     .budget-table td.budget-col-am,
+    .budget-table th.budget-col-pm,     .budget-table td.budget-col-pm,
+    .budget-table th.budget-col-strat,  .budget-table td.budget-col-strat,
+    .budget-table th.budget-col-design, .budget-table td.budget-col-design {
+      width: 104px;
+      min-width: 104px;
+    }
+    .budget-table th.budget-col-contractor,
+    .budget-table td.budget-col-contractor { min-width: 220px; }
+    .budget-table td { padding: 12px 10px; }
+    /* Prevent the table-wrap's rounded border from clipping the horizontal scroll indicator */
+    .budget-table-wrap { border-radius: var(--radius-lg); }
   }
 </style>
 </head>
