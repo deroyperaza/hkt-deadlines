@@ -1368,6 +1368,10 @@
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
     }
+    /* Force table to a minimum width so it actually overflows the wrap and all
+       columns (header navy, body hairlines, contractor cell) render at their
+       intended widths — instead of the table collapsing to fit its container. */
+    .budget-table { min-width: 820px; width: 820px; }
     .budget-table thead th { position: static; top: auto; z-index: auto; }
     /* Tighter column widths to reduce horizontal scroll distance */
     .budget-table th:first-child,
@@ -1380,10 +1384,8 @@
       min-width: 104px;
     }
     .budget-table th.budget-col-contractor,
-    .budget-table td.budget-col-contractor { min-width: 220px; }
+    .budget-table td.budget-col-contractor { width: 220px; min-width: 220px; }
     .budget-table td { padding: 12px 10px; }
-    /* Prevent the table-wrap's rounded border from clipping the horizontal scroll indicator */
-    .budget-table-wrap { border-radius: var(--radius-lg); }
   }
 </style>
 </head>
