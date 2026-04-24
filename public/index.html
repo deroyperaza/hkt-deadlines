@@ -1229,10 +1229,11 @@
     text-transform: none;
   }
   /* Match the nav pill colors exactly (same as .team-pill.led-* in the top nav) */
-  .budget-col-pill.am     { background: #ffe2d0; color: #4a1a00; } /* = .led-account */
-  .budget-col-pill.pm     { background: #d0f0e0; color: #063d22; } /* = .led-pm */
-  .budget-col-pill.strat  { background: #e5fb9e; color: #283800; } /* = .led-strategy */
-  .budget-col-pill.design { background: #c8f4ff; color: #07364a; } /* = .led-creative */
+  .budget-col-pill.am         { background: #ffe2d0; color: #4a1a00; } /* = .led-account */
+  .budget-col-pill.pm         { background: #d0f0e0; color: #063d22; } /* = .led-pm */
+  .budget-col-pill.strat      { background: #e5fb9e; color: #283800; } /* = .led-strategy */
+  .budget-col-pill.design     { background: #c8f4ff; color: #07364a; } /* = .led-creative */
+  .budget-col-pill.contractor { background: var(--hatTrick); color: #1a0857; } /* = .led-contractor */
 
   /* Role filtering: show only the matching role's column; hide all other role cols AND Contractor col */
   .budget-table.filter-am    .budget-col-pm,
@@ -2662,7 +2663,7 @@ function renderBudget() {
             <th class="num budget-col-pm"><span class="budget-col-pill pm">PM</span></th>
             <th class="num budget-col-strat"><span class="budget-col-pill strat">Strat</span></th>
             <th class="num budget-col-design"><span class="budget-col-pill design">Design</span></th>
-            <th class="budget-col-contractor">Contractor Budget</th>
+            <th class="budget-col-contractor"><span class="budget-col-pill contractor">Contractor</span></th>
           </tr>
         </thead>
         <tbody>${rows}${totalsRow}</tbody>
