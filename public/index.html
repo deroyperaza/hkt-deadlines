@@ -1170,13 +1170,13 @@
     font-size: 13px;
     background: #fff;
   }
-  /* Pin the column-header cells while scrolling. top = nav (56px) + cream-bar (~80px).
+  /* Pin the column-header cells while scrolling. Must sit below nav (56px top:0 sticky)
+     + cream-bar (sticky at top:56, ~94px tall including both control rows + pills).
      We rely on the individual th backgrounds (rather than a tr background) because the
-     tr isn't sticky — if it were painted navy, it would scroll away from under the
-     sticky th cells and produce a second phantom bar. */
+     tr isn't sticky — painting the tr navy would cause a phantom second bar during scroll. */
   .budget-table thead th {
     position: sticky;
-    top: 136px;
+    top: 150px;
     z-index: 5;
   }
   .budget-table th {
