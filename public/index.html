@@ -1259,8 +1259,36 @@
   .budget-table th.budget-col-pm,     .budget-table td.budget-col-pm,
   .budget-table th.budget-col-strat,  .budget-table td.budget-col-strat,
   .budget-table th.budget-col-design, .budget-table td.budget-col-design {
-    width: 120px;
-    min-width: 120px;
+    width: 140px;
+    min-width: 140px;
+  }
+
+  /* Phase-level breakdown inside each role cell */
+  .budget-hour-total { font-size: 13px; }
+  .budget-phase-list {
+    list-style: none;
+    margin: 6px 0 0;
+    padding: 0;
+    font-size: 11px;
+  }
+  .budget-phase-list li {
+    display: flex;
+    justify-content: space-between;
+    line-height: 1.45;
+    color: rgba(15,4,80,0.62);
+    font-variant-numeric: tabular-nums;
+  }
+  .budget-phase-list .phase-label {
+    font-family: var(--font-display);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-size: 10px;
+    color: var(--text-muted);
+  }
+  .budget-phase-list .phase-hrs {
+    font-weight: 500;
+    color: var(--hubble);
   }
 
   /* Contractor breakdown */
@@ -1700,87 +1728,165 @@ let UPDATE_LOG = [
 // Active project budgets extracted from Planning & Closing docs.
 // Phase 1: hardcoded. Phase 2 will sync from Drive via a Cloud Function.
 const INTERNAL_RATE = 160; // $/hr — Hyperakt internal cost rate (not client billing rate)
+// Each role's hours are stored as { total, phases } so the view can show both
+// the headline number and the phase-by-phase breakdown extracted from the
+// Tracking/Team table of each Planning doc. Phases with 0 allocation are omitted.
 const PROJECT_BUDGETS = [
   { prefix:"CHCF 30", client:"California Health Care Foundation", project:"CHCF 30th Anniversary Branding",
-    hours:{am:0, pm:8, strat:0, design:30},
+    hours:{
+      am:     { total:0,  phases:{} },
+      pm:     { total:8,  phases:{create:8} },
+      strat:  { total:0,  phases:{} },
+      design: { total:30, phases:{create:30} }
+    },
     contractors:{ total:2000, breakdownSum:2000, discrepancy:false, breakdown:[
       { role:"Brand Designer (Genesis)", amount:2000 }
     ] } },
-  { prefix:"CLUA",  client:"Climate and Land Use Alliance",      project:"CLUA & FPC Branding",
-    hours:{am:83, pm:165, strat:373, design:204},
+  { prefix:"CLUA", client:"Climate and Land Use Alliance", project:"CLUA & FPC Branding",
+    hours:{
+      am:     { total:83,  phases:{define:21,  envision:38,  create:24} },
+      pm:     { total:165, phases:{define:41,  envision:75,  create:49} },
+      strat:  { total:373, phases:{define:124, envision:225, create:24} },
+      design: { total:204, phases:{define:21,  envision:38,  create:146} }
+    },
     contractors:{ total:18500, breakdownSum:19500, discrepancy:true, breakdown:[
-      { role:"Designer 1",            amount:10000 },
-      { role:"Designer 2",            amount:5500 },
-      { role:"Namers",                amount:3000 },
-      { role:"Animator",              amount:500 },
-      { role:"Lawyer",                amount:500 }
+      { role:"Designer 1", amount:10000 },
+      { role:"Designer 2", amount:5500 },
+      { role:"Namers",     amount:3000 },
+      { role:"Animator",   amount:500 },
+      { role:"Lawyer",     amount:500 }
     ] } },
-  { prefix:"CLI",   client:"Climate Leadership Initiative",       project:"CL Pitch Deck",
-    hours:{am:10, pm:0, strat:27, design:16},
+  { prefix:"CLI", client:"Climate Leadership Initiative", project:"CL Pitch Deck",
+    hours:{
+      am:     { total:10, phases:{envision:5, create:5} },
+      pm:     { total:0,  phases:{} },
+      strat:  { total:27, phases:{envision:27} },
+      design: { total:16, phases:{create:16} }
+    },
     contractors:{ total:500, breakdownSum:500, discrepancy:false, breakdown:[
-      { role:"Designer",              amount:500 }
+      { role:"Designer", amount:500 }
     ] } },
-  { prefix:"EFSC",  client:"Education Foundation of Sarasota County", project:"EFSC Renaming & Rebranding",
-    hours:{am:43, pm:85, strat:180, design:118},
+  { prefix:"EFSC", client:"Education Foundation of Sarasota County", project:"EFSC Renaming & Rebranding",
+    hours:{
+      am:     { total:43,  phases:{define:11, envision:16, create:15} },
+      pm:     { total:85,  phases:{define:23, envision:33, create:30} },
+      strat:  { total:180, phases:{define:68, envision:98, create:15} },
+      design: { total:118, phases:{define:11, envision:16, create:90} }
+    },
     contractors:{ total:12000, breakdownSum:12000, discrepancy:false, breakdown:[
-      { role:"Designer",              amount:10000 },
-      { role:"Namer",                 amount:2000 }
+      { role:"Designer", amount:10000 },
+      { role:"Namer",    amount:2000 }
     ] } },
-  { prefix:"FP",    client:"Founders Pledge",                    project:"Philanthropy Partnerships Branding",
-    hours:{am:0, pm:41, strat:144, design:21},
+  { prefix:"FP", client:"Founders Pledge", project:"Philanthropy Partnerships Branding",
+    hours:{
+      am:     { total:0,   phases:{} },
+      pm:     { total:41,  phases:{define:19, envision:23} },
+      strat:  { total:144, phases:{define:66, envision:79} },
+      design: { total:21,  phases:{define:9,  envision:11} }
+    },
     contractors:{ total:0, breakdownSum:0, discrepancy:false, breakdown:[] } },
-  { prefix:"JVS",   client:"JVS SoCal",                          project:"JVS Rebranding",
-    hours:{am:29, pm:59, strat:117, design:89},
+  { prefix:"JVS", client:"JVS SoCal", project:"JVS Rebranding",
+    hours:{
+      am:     { total:29,  phases:{define:16, envision:6,  create:8} },
+      pm:     { total:59,  phases:{define:31, envision:13, create:15} },
+      strat:  { total:117, phases:{define:78, envision:31, create:8} },
+      design: { total:89,  phases:{define:31, envision:13, create:45} }
+    },
     contractors:{ total:5000, breakdownSum:5000, discrepancy:false, breakdown:[
-      { role:"Designer",              amount:5000 }
+      { role:"Designer", amount:5000 }
     ] } },
-  { prefix:"MACP",  client:"Margaret A. Cargill Philanthropies", project:"Verbal Brand Expansion 2026",
-    hours:{am:0, pm:51, strat:177, design:25},
+  { prefix:"MACP", client:"Margaret A. Cargill Philanthropies", project:"Verbal Brand Expansion 2026",
+    hours:{
+      am:     { total:0,   phases:{} },
+      pm:     { total:51,  phases:{envision:51} },
+      strat:  { total:177, phases:{envision:177} },
+      design: { total:25,  phases:{envision:25} }
+    },
     contractors:{ total:500, breakdownSum:500, discrepancy:false, breakdown:[
-      { role:"Designer",              amount:500 }
+      { role:"Designer", amount:500 }
     ] } },
-  { prefix:"Mass Insight", client:"Mass Insight Education & Research",  project:"MI Rebranding",
-    hours:{am:53, pm:70, strat:137, design:123},
+  { prefix:"Mass Insight", client:"Mass Insight Education & Research", project:"MI Rebranding",
+    hours:{
+      am:     { total:53,  phases:{define:8,  envision:15, create:24, build:5} },
+      pm:     { total:70,  phases:{define:24, envision:15, create:24, build:5} },
+      strat:  { total:137, phases:{define:41, envision:62, create:16, build:18} },
+      design: { total:123, phases:{define:8,  envision:10, create:98, build:7} }
+    },
     contractors:{ total:10500, breakdownSum:11000, discrepancy:true, breakdown:[
-      { role:"Lupa",                  amount:8000 },
-      { role:"Lupa CO#2",             amount:2000 },
+      { role:"Lupa",                     amount:8000 },
+      { role:"Lupa CO#2",                amount:2000 },
       { role:"Beyond the Surface (PPT)", amount:500 },
-      { role:"Trademark CO",          amount:500 }
+      { role:"Trademark CO",             amount:500 }
     ] } },
-  { prefix:"MNMF",  client:"Museum of New Mexico Foundation",    project:"MNMF Rebranding",
-    hours:{am:90, pm:150, strat:118, design:142},
+  { prefix:"MNMF", client:"Museum of New Mexico Foundation", project:"MNMF Rebranding",
+    hours:{
+      am:     { total:90,  phases:{define:10, envision:19, create:61,  build:34} },
+      pm:     { total:150, phases:{define:30, envision:28, create:92,  build:28} },
+      strat:  { total:118, phases:{define:50, envision:38, create:31} },
+      design: { total:142, phases:{define:10, envision:9,  create:122, build:7} }
+    },
     contractors:{ total:38050, breakdownSum:55010, discrepancy:true, breakdown:[
-      { role:"Bistro Dev",            amount:20000 },
-      { role:"Lupa",                  amount:15000 },
-      { role:"Strategy CO#1",         amount:8960 },
-      { role:"UX/Content",            amount:8000 },
-      { role:"Travel",                amount:3050 }
+      { role:"Bistro Dev",    amount:20000 },
+      { role:"Lupa",          amount:15000 },
+      { role:"Strategy CO#1", amount:8960 },
+      { role:"UX/Content",    amount:8000 },
+      { role:"Travel",        amount:3050 }
     ] } },
-  { prefix:"PRYSM", client:"Prysm Initiative",                   project:"Website & Additional Assets",
-    hours:{am:14, pm:114, strat:0, design:151},
+  { prefix:"PRYSM", client:"Prysm Initiative", project:"Website & Additional Assets",
+    hours:{
+      am:     { total:14,  phases:{envision:3,  create:5,  build:6} },
+      pm:     { total:114, phases:{envision:23, create:30, build:62} },
+      strat:  { total:0,   phases:{} },
+      design: { total:151, phases:{envision:31, create:65, build:56} }
+    },
     contractors:{ total:13000, breakdownSum:13000, discrepancy:false, breakdown:[
-      { role:"Lupa (UX+Dev)",         amount:10000 },
-      { role:"Icon Designer",         amount:3000 }
+      { role:"Lupa (UX+Dev)", amount:10000 },
+      { role:"Icon Designer", amount:3000 }
     ] } },
-  { prefix:"RWJF",  client:"Robert Wood Johnson Foundation",     project:"Design Support 2025",
-    hours:{am:20, pm:40, strat:0, design:40},
+  { prefix:"RWJF", client:"Robert Wood Johnson Foundation", project:"Design Support 2025",
+    hours:{
+      am:     { total:20, phases:{create:20} },
+      pm:     { total:40, phases:{create:40} },
+      strat:  { total:0,  phases:{} },
+      design: { total:40, phases:{create:40} }
+    },
     contractors:{ total:10000, breakdownSum:10000, discrepancy:false, breakdown:[
-      { role:"Designer",              amount:10000 }
+      { role:"Designer", amount:10000 }
     ] } },
-  { prefix:"SAAF",  client:"San Antonio Area Foundation",        project:"SAAF Rebranding",
-    hours:{am:95, pm:118, strat:225, design:271},
+  { prefix:"SAAF", client:"San Antonio Area Foundation", project:"SAAF Rebranding",
+    hours:{
+      am:     { total:95,  phases:{define:36, envision:17,  create:35,  build:7} },
+      pm:     { total:118, phases:{envision:34, create:70, build:14} },
+      strat:  { total:225, phases:{define:65, envision:111, create:18,  build:31} },
+      design: { total:271, phases:{define:18, envision:9,   create:228, build:17} }
+    },
     contractors:{ total:10500, breakdownSum:12500, discrepancy:true, breakdown:[
-      { role:"Branding",              amount:10000 },
-      { role:"MS Office Designer",    amount:2000 },
-      { role:"Animator",              amount:500 }
+      { role:"Branding",           amount:10000 },
+      { role:"MS Office Designer", amount:2000 },
+      { role:"Animator",           amount:500 }
     ] } },
-  { prefix:"TFA",   client:"Teach For America",                  project:"Teach Michigan Brand Refresh",
-    hours:{am:56, pm:102, strat:317, design:88},
+  { prefix:"TFA", client:"Teach For America", project:"Teach Michigan Brand Refresh",
+    hours:{
+      am:     { total:56,  phases:{define:12, envision:34,  create:11} },
+      pm:     { total:102, phases:{define:30, envision:51,  create:21} },
+      strat:  { total:317, phases:{define:72, envision:203, create:43} },
+      design: { total:88,  phases:{define:12, envision:34,  create:43} }
+    },
     contractors:{ total:16000, breakdownSum:16000, discrepancy:false, breakdown:[
-      { role:"UX/UI",                 amount:8000 },
-      { role:"Decks",                 amount:5000 },
-      { role:"Report Designer",       amount:3000 }
+      { role:"UX/UI",           amount:8000 },
+      { role:"Decks",           amount:5000 },
+      { role:"Report Designer", amount:3000 }
     ] } }
+];
+
+// Phase ordering + short labels for the budget breakdown
+const BUDGET_PHASES = [
+  { key:'define',   label:'Def' },
+  { key:'envision', label:'Env' },
+  { key:'create',   label:'Cre' },
+  { key:'build',    label:'Bld' },
+  { key:'launch',   label:'Lch' },
+  { key:'grow',     label:'Grw' }
 ];
 
 const MONTH_ORDER = ["April","May","June","July","August","September","Oct–Dec"];
@@ -2473,12 +2579,23 @@ function renderBudget() {
 
   const totals = { am:0, pm:0, strat:0, design:0, contractor:0 };
   filtered.forEach(b => {
-    totals.am       += b.hours.am;
-    totals.pm       += b.hours.pm;
-    totals.strat    += b.hours.strat;
-    totals.design   += b.hours.design;
+    totals.am       += b.hours.am.total;
+    totals.pm       += b.hours.pm.total;
+    totals.strat    += b.hours.strat.total;
+    totals.design   += b.hours.design.total;
     totals.contractor += b.contractors.total;
   });
+
+  // Per-role cell: total hours + phase breakdown (phases with 0 omitted)
+  const roleCell = (roleData) => {
+    const phases = BUDGET_PHASES
+      .filter(p => (roleData.phases || {})[p.key] > 0)
+      .map(p => `<li><span class="phase-label">${p.label}</span><span class="phase-hrs">${roleData.phases[p.key]}</span></li>`)
+      .join('');
+    const head = `<div class="budget-hour-total"><span class="budget-hour">${roleData.total}</span><span class="budget-hour-unit">hours</span></div>`;
+    const list = phases ? `<ul class="budget-phase-list">${phases}</ul>` : '';
+    return head + list;
+  };
 
   const rows = filtered.map(b => {
     const discFlag = b.contractors.discrepancy
@@ -2489,13 +2606,12 @@ function renderBudget() {
           `<li><span class="amount">${fmtMoney(c.amount)}</span><span>${c.role}</span></li>`
         ).join('')}</ul>`
       : `<div class="budget-contractor-empty">— all in-house</div>`;
-    const hrs = n => `<span class="budget-hour">${n}</span><span class="budget-hour-unit">hours</span>`;
     return `<tr>
       <td><span class="project-tag">${b.prefix}</span></td>
-      <td class="${colCls('am')}">${hrs(b.hours.am)}</td>
-      <td class="${colCls('pm')}">${hrs(b.hours.pm)}</td>
-      <td class="${colCls('strat')}">${hrs(b.hours.strat)}</td>
-      <td class="${colCls('design')}">${hrs(b.hours.design)}</td>
+      <td class="${colCls('am')}">${roleCell(b.hours.am)}</td>
+      <td class="${colCls('pm')}">${roleCell(b.hours.pm)}</td>
+      <td class="${colCls('strat')}">${roleCell(b.hours.strat)}</td>
+      <td class="${colCls('design')}">${roleCell(b.hours.design)}</td>
       <td class="budget-col-contractor">
         <div class="budget-contractor-total">${fmtMoney(b.contractors.total)}${discFlag}</div>
         ${breakdownHtml}
