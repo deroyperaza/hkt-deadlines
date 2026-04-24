@@ -1195,13 +1195,18 @@
   }
   .budget-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
   .budget-table td:last-child { border-right: none; }
+  /* Role columns are left-aligned — the big hour total + phase list read better that way */
+  .budget-table th.budget-col-am,     .budget-table td.budget-col-am,
+  .budget-table th.budget-col-pm,     .budget-table td.budget-col-pm,
+  .budget-table th.budget-col-strat,  .budget-table td.budget-col-strat,
+  .budget-table th.budget-col-design, .budget-table td.budget-col-design { text-align: left; }
   /* Project cell — uses existing .project-tag pill style. Widest alongside the Contractor column. */
   .budget-table th:first-child,
   .budget-table td:first-child { min-width: 320px; width: 320px; padding-right: 16px; }
   /* Contractor Budget — widest column, room for the breakdown list */
   .budget-table th.budget-col-contractor,
   .budget-table td.budget-col-contractor { min-width: 280px; }
-  .budget-hour { font-variant-numeric: tabular-nums; font-weight: 500; color: var(--hubble); }
+  .budget-hour { font-variant-numeric: tabular-nums; font-weight: 700; color: var(--hubble); font-size: 14px; }
 
   /* Column header pills — styled like .team-pill for visual consistency */
   .budget-col-pill {
