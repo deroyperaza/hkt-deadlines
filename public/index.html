@@ -1155,10 +1155,10 @@
     color: var(--text-muted);
     margin: 8px 0 20px;
   }
-  /* Frame the table like the list view — rounded corners, white bg, subtle border */
+  /* Frame the table like the list view — rounded corners, white bg, subtle border.
+     No overflow-x here: overflow creates a scroll container that breaks sticky on the thead.
+     If horizontal scroll is needed on mobile later, wrap this in a media query. */
   .budget-table-wrap {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
     margin-top: 16px;
     border-radius: var(--radius-lg);
     border: 1px solid var(--border);
@@ -1170,9 +1170,10 @@
     font-size: 13px;
     background: #fff;
   }
-  /* Navy bar on the thead row itself — guarantees full-width header even when some columns are hidden */
-  .budget-table thead tr { background: var(--hubble); }
-  /* Pin the column-header row while scrolling. top = nav (56px) + cream-bar (~80px). */
+  /* Pin the column-header cells while scrolling. top = nav (56px) + cream-bar (~80px).
+     We rely on the individual th backgrounds (rather than a tr background) because the
+     tr isn't sticky — if it were painted navy, it would scroll away from under the
+     sticky th cells and produce a second phantom bar. */
   .budget-table thead th {
     position: sticky;
     top: 136px;
