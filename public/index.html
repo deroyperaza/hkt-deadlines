@@ -1173,10 +1173,10 @@
     table-layout: auto;
   }
   /* Neutralize the list view's unscoped `table td:nth-child(5)` rules which otherwise
-     make the Design column sticky-right and override its background on hover. */
-  .budget-table thead th:nth-child(5),
-  .budget-table tbody td:nth-child(5) { position: static; right: auto; }
-  .budget-table tbody td:nth-child(5) { background: transparent; }
+     make the Design column sticky-right and tweak its background on hover.
+     Keep the thead sticky-top behavior intact — only clear sticky-right on the header. */
+  .budget-table thead th:nth-child(5) { right: auto; }
+  .budget-table tbody td:nth-child(5) { position: static; right: auto; background: transparent; }
   .budget-table tbody tr:hover td:nth-child(5) { background: transparent; }
   /* Pin the column-header cells while scrolling. Must sit below nav (56px top:0 sticky)
      + cream-bar (sticky at top:56, ~94px tall including both control rows + pills).
