@@ -1172,6 +1172,12 @@
   }
   /* Navy bar on the thead row itself — guarantees full-width header even when some columns are hidden */
   .budget-table thead tr { background: var(--hubble); }
+  /* Pin the column-header row while scrolling. top = nav (56px) + cream-bar (~80px). */
+  .budget-table thead th {
+    position: sticky;
+    top: 136px;
+    z-index: 5;
+  }
   .budget-table th {
     font-family: var(--font-display);
     font-size: 11px;
