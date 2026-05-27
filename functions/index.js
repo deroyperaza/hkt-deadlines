@@ -90,6 +90,7 @@ function inferLed(phase, milestone = '', project = '') {
   if (m.includes('kick-off') || m.includes('kickoff') || m.includes('kick off')) return 'Account Management + PM';
 
   // Explicit discipline keywords in milestone
+  if (m.includes('brand collateral')) return 'Creative';
   const hasDesign  = m.includes('design layout') || m.includes('design system') ||
                      m.includes('brand guide')   || m.includes('logo');
   const hasContent = m.includes('content writing');
