@@ -87,6 +87,7 @@ function inferLed(phase, milestone = '', project = '') {
 
   // Multi-team milestones
   if (m.includes('board meeting')) return 'Strategy + Creative + Account Management';
+  if (m.includes('creative brief')) return 'Strategy + Creative';
   if (m.includes('kick-off') || m.includes('kickoff') || m.includes('kick off')) return 'Account Management + PM';
 
   // Explicit discipline keywords in milestone
