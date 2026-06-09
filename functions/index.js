@@ -16,7 +16,7 @@ const PROJECTS = [
   { name: 'TFA',          channelId: 'C0A8BS18KJP', canvasId: 'F0AARPS72CR' },
   { name: 'MNMF',         channelId: 'C092D6W7MR7', canvasId: 'F0920FBC9M0' },
   { name: 'MNMF Web', channelId: 'C0AMK4MCQMP', canvasId: 'F0AMKG43X8R' },
-  { name: 'Mass Insight', channelId: 'C09BW8FH0FP', canvasId: 'F09BJT2A347', colOrder: 'date-first' },
+  { name: 'Mass Insight', channelId: 'C09BW8FH0FP', canvasId: 'F09BJT2A347' },
   { name: 'SAAF',         channelId: 'C09NJ3S0GKZ', canvasId: 'F09RC6EMX8R' },
   { name: 'CHCF 30',      channelId: 'C09NBBJ5ATT', canvasId: 'F09NJJHAC4F' },
   { name: 'JVS',          channelId: 'C0A2S704Q2U', canvasId: 'F0A9X2X9UGP' },
@@ -25,9 +25,9 @@ const PROJECTS = [
   { name: 'FP',           channelId: 'C0ANYASBU4U', canvasId: 'F0AHEHCQ999' },
   { name: 'MACP',         channelId: 'C06PJ58UPLM', canvasId: 'F06PPGGLBJQ' },
   { name: 'Prysm',        channelId: 'C09K3F0NE9K', canvasId: 'F09K4V9EDC5' },
+  { name: 'CLI',          channelId: 'C052005RJF9', canvasId: 'F05L8EQQJLC', colOrder: 'date-first' },
   // No canvas found for these projects (retainer or completed):
   // { name: 'RWJF',         channelId: 'C03QXS2D6HG', canvasId: '' },
-  // { name: 'CL IFI',       channelId: 'C052005RJF9', canvasId: '' },
   // { name: 'SJLF',         channelId: 'C09FUTYGECU', canvasId: '' },
 ];
 
