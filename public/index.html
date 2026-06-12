@@ -7,8 +7,17 @@
 <link rel="shortcut icon" href="/favicon.ico">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
 <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon-v2.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@400;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* ── Hyperakt brand fonts (self-hosted) ─────────────── */
+  /* Magnet Medium = display/headlines · Graphik = body/labels/data */
+  @font-face{ font-family:'Magnet'; font-weight:400; font-display:swap; src:url('/fonts/Magnet-Medium.woff2') format('woff2'); }
+  @font-face{ font-family:'Magnet'; font-weight:500; font-display:swap; src:url('/fonts/Magnet-Medium.woff2') format('woff2'); }
+  @font-face{ font-family:'Magnet'; font-weight:600; font-display:swap; src:url('/fonts/Magnet-Medium.woff2') format('woff2'); }
+  @font-face{ font-family:'Magnet'; font-weight:700; font-display:swap; src:url('/fonts/Magnet-Medium.woff2') format('woff2'); }
+  @font-face{ font-family:'Graphik'; font-weight:400; font-display:swap; src:url('/fonts/Graphik-Regular-Web.woff2') format('woff2'); }
+  @font-face{ font-family:'Graphik'; font-weight:500; font-display:swap; src:url('/fonts/Graphik-Medium-Web.woff2') format('woff2'); }
+  @font-face{ font-family:'Graphik'; font-weight:600; font-display:swap; src:url('/fonts/Graphik-Semibold-Web.woff2') format('woff2'); }
+</style>
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
@@ -28,10 +37,10 @@
   }
   #login-overlay svg { color: #ff4d00; height: 52px; width: 52px; }
   .login-title {
-    font-family: 'Barlow Semi Condensed', Arial Narrow, Arial, sans-serif;
+    font-family: 'Magnet', 'Heebo', 'Helvetica Neue', Arial, sans-serif;
     font-size: 22px;
     font-weight: 700;
-    letter-spacing: 0.04em;
+    letter-spacing: -0.02em;
     color: #fffcf1;
   }
   .login-btn {
@@ -43,7 +52,7 @@
     border: none;
     border-radius: 4px;
     padding: 12px 24px;
-    font-family: 'Barlow', Arial, sans-serif;
+    font-family: 'Graphik', 'Heebo', 'Helvetica Neue', Arial, sans-serif;
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
@@ -52,7 +61,7 @@
   }
   .login-btn:hover { opacity: 0.88; }
   .login-note {
-    font-family: 'Barlow', Arial, sans-serif;
+    font-family: 'Graphik', 'Heebo', 'Helvetica Neue', Arial, sans-serif;
     font-size: 12px;
     color: rgba(255,252,241,0.4);
     letter-spacing: 0.02em;
@@ -84,8 +93,8 @@
     --surface:    rgba(15,4,80,0.05);
     --surface2:   rgba(15,4,80,0.09);
     --text-muted: rgba(15,4,80,0.5);
-    --font-display: 'Barlow Semi Condensed', 'Arial Narrow', Arial, sans-serif;
-    --font-body:    'Barlow', 'Helvetica Neue', Arial, sans-serif;
+    --font-display: 'Magnet', 'Heebo', 'Helvetica Neue', Arial, sans-serif;
+    --font-body:    'Graphik', 'Heebo', 'Helvetica Neue', Arial, sans-serif;
     --radius:     4px;
     --radius-lg:  8px;
     --radius-pill:100px;
@@ -1019,12 +1028,12 @@
   /* ── GANTT VIEW ─────────────────────────────────────────────────────────── */
   #main-content.gantt-mode {
     padding: 0;
-    height: calc(100vh - 58px);
     overflow: hidden;
   }
   .gantt-outer {
-    height: 100%;
-    overflow: auto;
+    overflow-x: auto;
+    overflow-y: auto;
+    overscroll-behavior: contain;
     background: var(--horchata);
   }
   .gantt-inner {
@@ -2499,6 +2508,7 @@ function renderGantt() {
     if (!projMap[np]) { projMap[np] = []; projOrder.push(np); }
     projMap[np].push(r);
   });
+  projOrder.sort((a, b) => a.localeCompare(b));
 
   // ── Alternating month stripe helper ────────────────────────────────────────
   function monthStripes() {
@@ -2559,7 +2569,6 @@ function renderGantt() {
 
   // ── Render ─────────────────────────────────────────────────────────────────
   main.innerHTML = `
-    <h2 class="month-header" style="padding: 24px 20px 12px;">Project Plan</h2>
     <div class="gantt-outer" id="gantt-outer">
       <div class="gantt-inner">
         <div class="gantt-thead">
@@ -2575,6 +2584,10 @@ function renderGantt() {
       </div>
     </div>
     <div class="gantt-tooltip" id="gantt-tooltip"></div>`;
+
+  // ── Size gantt-outer to exactly fill remaining viewport height ────────────
+  const outerEl = document.getElementById('gantt-outer');
+  outerEl.style.height = (window.innerHeight - outerEl.getBoundingClientRect().top) + 'px';
 
   // ── Tooltip wiring ─────────────────────────────────────────────────────────
   const tip = document.getElementById('gantt-tooltip');

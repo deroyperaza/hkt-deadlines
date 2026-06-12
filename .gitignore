@@ -12,6 +12,9 @@ functions/node_modules/
 *.key
 service-account*.json
 
+# Editor / tooling
+.claude/
+
 # OS
 .DS_Store
 Thumbs.db

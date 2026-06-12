@@ -1,11 +1,13 @@
 {
   "name": "hkt-deadlines-functions",
   "version": "1.0.0",
-  "engines": { "node": "22" },
+  "engines": {
+    "node": "22"
+  },
   "main": "index.js",
   "dependencies": {
+    "cheerio": "^1.0.0",
     "firebase-admin": "^11.11.0",
-    "firebase-functions": "^4.9.0",
-    "cheerio": "^1.0.0"
+    "firebase-functions": "^6.6.0"
   }
 }

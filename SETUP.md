@@ -1,5 +1,39 @@
 # HKT Deadlines — Setup Guide
 
+---
+
+## ⚠️ Workflow Rules (Read First)
+
+**Two copies exist. Keep them in sync. Always deploy from local.**
+
+| Copy | Path | Purpose |
+|------|------|---------|
+| **Google Drive** (source of truth for edits) | `Google Drive > Brand & Marketing > HKT AI > HKT > HKT Deadlines > hkt-deadlines/` | Where all editing happens. Opened in Claude Code sessions. |
+| **Local** (deploy copy) | `~/Claude Dev/hkt-deadlines/` | Has `node_modules`. Used for all Firebase deploys. |
+
+### After any edit to Drive copy:
+
+**1. Sync Drive → Local:**
+```bash
+rsync -av --exclude='functions/node_modules' --exclude='.firebase' --exclude='firebase-debug.log' \
+  "/Users/deroyperaza/Library/CloudStorage/GoogleDrive-deroy@hyperakt.com/Shared drives/Brand & Marketing/HKT AI/Hyperakt/HKT Deadlines/hkt-deadlines/" \
+  "/Users/deroyperaza/Claude Dev/hkt-deadlines/"
+```
+
+**2. Deploy from Local:**
+```bash
+cd ~/Claude\ Dev/hkt-deadlines
+firebase deploy --only hosting          # frontend only
+firebase deploy --only functions        # backend only
+firebase deploy                         # both
+```
+
+> **Never deploy from the Google Drive path.** `node_modules` on a network drive causes Firebase CLI timeouts. The local copy has `node_modules` pre-installed and deploys in seconds.
+
+> **Never edit files in the local copy directly.** Always edit on Drive, then sync.
+
+---
+
 ## What you'll need
 - Node.js installed (https://nodejs.org — LTS version)
 - A Google account with Firebase access (your @hyperakt.com account works)

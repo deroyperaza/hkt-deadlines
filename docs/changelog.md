@@ -2,6 +2,20 @@
 
 ---
 
+## June 2026 — Hyperakt brand fonts
+
+### Typography → on-brand
+- Replaced placeholder Barlow type with Hyperakt's official brand fonts (source of truth: `hkt-brand-designer` skill)
+  - **Display / headings / dates:** Magnet Medium (was Barlow Semi Condensed) — `--font-display`
+  - **Body / labels / data:** Graphik Regular/Medium/Semibold (was Barlow) — `--font-body`
+- Self-hosted the woff2 files in `public/fonts/` (Magnet-Medium, Graphik-Regular/Medium/Semibold) and wired them via `@font-face` — these are commercial fonts, not on Google Fonts, so the prior Google Fonts `<link>` was removed
+- Updated the two CSS variables plus the 3 hardcoded font refs in the login overlay; tightened login-title tracking to `-0.02em` (Magnet uses negative tracking). Fallback chain: Heebo → system sans-serif
+- Verified in-browser before + after deploy: all 4 font files serve `200 font/woff2`, computed styles resolve to Magnet/Graphik, zero Barlow references remain on production
+- Deployed to Firebase Hosting (`deadlines.hyperakt.com`)
+- Corrected the stale typography + color tables in `…/Hyperakt/CLAUDE.md` to match the `hkt-brand-designer` skill (had listed Fraunces/DM Mono and two wrong color hexes)
+
+---
+
 ## April 2026 — Initial build + iterative improvements
 
 ### Infrastructure

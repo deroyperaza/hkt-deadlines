@@ -296,12 +296,12 @@ function parseCanvas(projectName, content, options = {}) {
   if (content.trimStart().startsWith('<')) {
     deadlines = parseCanvasHtml(projectName, content, options);
   } else {
-    deadlines = parseCanvasMarkdown(projectName, content);
+    deadlines = parseCanvasMarkdown(projectName, content, options);
   }
   return expandFeedbackDates(deadlines);
 }
 
-function parseCanvasMarkdown(projectName, markdown) {
+function parseCanvasMarkdown(projectName, markdown, options = {}) {
   const deadlines = [];
 
   // Split into table blocks (each table is separated by blank lines)
@@ -321,8 +321,8 @@ function parseCanvasMarkdown(projectName, markdown) {
       if (cells.length < 5) continue;
 
       const phaseCell     = cells[1];
-      const milestoneCell = cells[2];
-      const dateCell      = cells[3];
+      const milestoneCell = options.colOrder === 'date-first' ? cells[3] : cells[2];
+      const dateCell      = options.colOrder === 'date-first' ? cells[2] : cells[3];
       const statusCell    = cells[4] || '';
 
       if (phaseCell) currentPhase = cleanPhase(phaseCell);
